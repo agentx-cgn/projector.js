@@ -1,0 +1,165 @@
+
+
+body, html {
+  margin:0; padding:0; border:0; width: 100%; height: 100%; overflow: hidden;
+  font: 0.8em sans-serif; 
+  background: rgb(32, 32, 32); 
+}
+
+#projector, #hidden {
+  position: absolute;
+  width: 100%; height: 100%;
+  top: 0; left: 0;
+  background: rgb(32, 32, 32);
+  display: block;
+}
+
+#hidden {
+  background: rgb(128, 128, 128);
+  display: none;
+}
+#hidden canvas {
+  border: 1px solid white;
+  margin: 1px;
+}
+
+#audioselector {
+  position: relative;
+  top: 16px;
+  width: 340px; 
+  height: 220px;
+  margin: auto auto;
+  background: transparent;
+}
+
+#audioselector h3 {
+  color: #333;
+  font-size: 16px;
+  margin: 10px 0 2px 2px;
+}
+
+#audioselector ul {
+  margin: 0;
+  padding: 0;
+}
+
+#audioselector li {
+  margin: 4px 4px 4px 8px;
+  padding: 0;
+  list-style-type: none;
+  list-style-position: outside;
+  /*display: table-cell;*/
+  vertical-align: middle;
+}
+
+#audioselector .optText {
+  display: inline;
+  padding: 0 0 2px 0;
+  height: 12px;
+}
+
+#audioselector input {
+  margin: 0 4px 0 0;
+  padding: 0;
+  vertical-align: text-bottom;
+  background: transparent;
+}
+
+#audioselector label {
+  display: inline;
+  color: #666;
+  font-size: 0.85em;
+  margin: 0 0 0 2px;
+}
+
+#audioselector #ap_url {
+  border: 1px solid #888;
+  border-radius:3px;
+  margin: 0 0 0 8px;
+  padding: 0px 1px 0 4px;
+  font-size: 0.9em;
+  width: 140px;
+  height: 1.3em;;
+}
+
+#audioselector #ap_hide {
+  margin: 0 0 0 18px;
+}
+
+.container {
+  position: absolute;
+  margin: 0 12px;
+  top: 0;
+}
+
+.background {
+  background: #fff;
+  width: 100%;
+  height: 100%;
+  opacity: 0.8;
+  border: 3px solid #666;
+  border-radius: 11px;
+}
+
+.hover {
+  border: 3px solid #E66;
+}
+
+#msg {
+  z-index: 2; 
+  border: 1px solid white; 
+  border-radius: 3px; 
+  position: absolute; 
+  top: 32px; 
+  left: 32px;
+  display: none;
+  background: black; color: white; font-size: 11px;
+  padding: 2px 4px;
+}
+#splash {
+  font: 12px sans-serif; 
+  z-index: 10; 
+  border: 1px solid white; 
+  border-radius: 3px; 
+  position: absolute; 
+  width: 300px; height: 200px;
+  margin-top: -100px; margin-left: -150px;
+  top: 50%;
+  left: 50%;
+  display: block;
+  background: #666; 
+  /*vertical-align: middle;*/
+  text-align: center;
+  /*font-weight: bold;*/
+  font-size: 18px;
+  color: orange;
+  padding: 18px;
+  cursor: pointer;
+}
+#error {
+  z-index: 20; 
+  position: absolute; 
+  top: 30%; 
+  left: 10%;
+  width: 80%;
+  padding: 12px;
+  background: transparent; 
+  text-align: center;
+  border: 3px solid #a33;
+  border-radius: 13px;
+}
+#errorMessage {
+  font-size: 24px;
+  color: #ee3333;
+}
+#errorDetail {
+  color: orange; 
+  font-size: 18px;
+}
+#errorHelp {
+  color: #aaa; 
+  font-size: 14px;
+}
+.label {
+  background: black; color: white; font-size: 11px;
+}

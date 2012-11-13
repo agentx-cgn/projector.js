@@ -1,0 +1,149 @@
+<!DOCTYPE html>
+<html lang="en" dir="ltr" >
+  <head>
+    <meta http-equiv="Content-Type" content="application/xml+xhtml; charset=UTF-8" />
+    <title>demo - projector.js</title>
+    
+    <script type="text/javascript">
+
+      if (typeof console === "undefined") {
+        console = { log:function(){}, warn:function(){}, error:function(){} };
+      }
+
+      window.performance.now = window.performance.now ||
+        window.performance.webkitNow;
+
+      var TIM = (function(){
+        
+        var t0   = performance.timing.navigationStart || Date.now() || +new Date(), 
+            fill = new Array(18).join(" "), 
+            pad  = function(s){return (s+fill).substr(0, fill.length)},
+            now  = function( ){return parseInt(window.performance.now()*10, 10)/10000;}
+
+        return {
+          Now:  now,
+          step: function(key, com){
+            console.log (pad(key), "-", now() + " sec", (com) ? com : "-");
+          }
+        };
+        
+      })();
+
+      TIM.step(window.location.host || "Local", document.location.href);
+
+    </script>
+
+    <link rel="shortcut icon"  href="favicon.ico">
+    <link rel="stylesheet" href="projector.css" type="text/css" />
+    <meta name="description" content="projectors.js - a high performance HTML5 canvas mixer" />
+    <meta name="keywords" content="effects, webrtc, canvas, html5" />
+  </head>
+  <body>
+    
+    <div id="hidden" style="display:none"></div>
+
+    <div id="error" style="display:none">
+      <span id="errorMessage">msg</span><br />
+      <span id="errorDetail">detail</span><br /><br />
+      <span id="errorHelp">[either you press F5 to reload <br />or you start debugging now.]</span>
+    </div>
+
+    <canvas id="projector"></canvas>
+
+    <div id="audioselector" style="display:none">
+      <div class="background"></div>
+      <div class="container">
+        <h3>Select an Audio Source</h3>
+        <ul>
+          <li>
+            <input  id="ap_mute"  name="source" value="false" type="radio"><div class="optText">Mute</div></input>
+            <label for="ap_mute">(pure silence)</label>
+          </li>
+          <li>
+            <input  id="ap_sine"  name="source" value="false" type="radio"><div class="optText">440HZ</div></input>
+            <label for="ap_sine">(concert A)</label>
+          </li>
+          <li>
+            <input  id="ap_micro" name="source"  value="false" type="radio"><div class="optText">Microphone</div></input>
+            <label for="ap_micro">(go live)</label>
+          </li>
+          <li>
+            <input  id="ap_radio"  name="source" value="false" type="radio"><div class="optText">Radio</div></input>
+            <input  id="ap_url"   value="" type="text" size:"30"></input>
+            <label for="ap_radio">(enter stream URL)</label>
+          </li>
+          <li>
+            <input  id="ap_playlist"   name="source" value="false" type="radio"><div class="optText">Playlist</div></input>
+            <label for="ap_playlist">(drop playlist here)</label>
+          </li>
+          <li>
+            <input  id="ap_remember" value="false" type="checkbox">remember choice</input>
+            <label for="ap_remember">(press 'm m' to change)</label>
+          </li>
+          <li>or</li>
+          <li>
+            <!-- <input  id="ap_files"  name="source" value="false" type="radio"><div class="optText">Files</div></input> -->
+            <input style="display:none"  type="file" id="ap_selectFolders" webkitdirectory multiple />
+            <input style="display:none"  type="file" id="ap_selectFiles" multiple />
+            Select mp3
+            <a id="ap_choosefiles" href="#">files</a> or 
+            <a id="ap_choosefolders" href="#">folders</a>; 
+            <span id="txtSelected">0 files loaded</span>
+          </li>
+          <li>
+            <div class="optText" id="lblVolume">Volume</div>
+            <input  id="ap_volume" type="range" min="0" max="100" value="50" step="1" ></input>
+            <label id="txtVolume" for="ap_volume">50%</label>
+            <button id="ap_hide" type="submit">Hide</button>
+          </li>
+          <li>
+            <span id="ap_msg"></span>
+          </li>
+        </ul>
+      </div>
+    </div>
+
+    <div id="scripts" style="display:none">
+
+    <!-- 
+      https://github.com/aadsm/JavaScript-ID3-Reader/
+    -->
+
+      <script type="text/javascript" src="libs/id3/stringutils.js"></script>
+      <script type="text/javascript" src="libs/id3/bufferedbinaryajax.js"></script>
+      <script type="text/javascript" src="libs/id3/filereader.js"></script>
+      <script type="text/javascript" src="libs/id3/base64.js"></script>
+      <script type="text/javascript" src="libs/id3/id3.js"></script>
+      <script type="text/javascript" src="libs/id3/id3v1.js"></script>
+      <script type="text/javascript" src="libs/id3/id3v2.js"></script>
+      <script type="text/javascript" src="libs/id3/id3v2frames.js"></script>
+      <script type="text/javascript" src="libs/id3/id4.js"></script>
+      
+      <script type="text/javascript" src="libs/pixastic.core.js"></script>
+      <script type="text/javascript" src="libs/pixastic.filters.js"></script>
+      <script type="text/javascript" src="libs/pixastic.filters.projector.js"></script>
+      <script type="text/javascript" src="libs/tween.js"></script>
+      <script type="text/javascript" src="libs/jquery-1.8.1.min.js"></script>
+      <script type="text/javascript" src="libs/jquery.fullscreen-1.0.min.js"></script>
+      <script type="text/javascript" src="libs/jquery.filedrop.js"></script>
+      <script type="text/javascript" src="libs/mousetrap.js"></script>
+      <script type="text/javascript" src="libs/async.max.js"></script>
+      <script type="text/javascript" src="libs/asyncStorage.max.js"></script>
+      <script type="text/javascript" src="libs/jdataview.js"></script>
+
+      <script type="text/javascript" src="html5-shim.js"></script>
+      <script type="text/javascript" src="code.js"></script>
+      <script type="text/javascript" src="database.js"></script>
+      <script type="text/javascript" src="interface.js"></script>
+      <script type="text/javascript" src="filter.js"></script>
+      <script type="text/javascript" src="effects.js"></script>
+      <script type="text/javascript" src="projector.js"></script>
+      <script type="text/javascript" src="audioplayer.js"></script>
+      <script type="text/javascript" src="playlists.js"></script>
+
+      <script type="text/javascript" src="compositions/demo.js"></script>
+
+    </div>
+
+  </body>
+</html>
