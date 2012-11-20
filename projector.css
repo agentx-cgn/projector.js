@@ -4,6 +4,8 @@ body, html {
   margin:0; padding:0; border:0; width: 100%; height: 100%; overflow: hidden;
   font: 0.8em sans-serif; 
   background: rgb(32, 32, 32); 
+  font-family: Arial, Helvetica, Sans-serif;
+  font-size: 14px;
 }
 
 #projector, #hidden {
@@ -21,6 +23,14 @@ body, html {
 #hidden canvas {
   border: 1px solid white;
   margin: 1px;
+  width: 256px;
+  height: 256px;
+}
+#hidden #test {
+  border: 1px solid white;
+  margin: 1px;
+  width: 64px;
+  height: 64px;
 }
 
 #audioselector {
