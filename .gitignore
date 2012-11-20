@@ -11,6 +11,12 @@ tests/
 tonne/
 tools/
 
+shows/
+media/audio/
+
+!media/audio/makeplaylist.txt
+!shows/show.demo.js
+
 README.copy.md
 readme.txt
 UNLICENSE
