@@ -1,0 +1,43 @@
+
+var Playlist = {
+  // 'micro': {
+  //   stream:  "micro", 
+  //   link:    "",
+  //   comment: "local webrtc stream, needs browser support"
+  // },
+  // 'deepmix': {
+  //   stream:  "http://85.21.79.93:9045/;", 
+  //   link:    "",
+  //   comment: "24k stream"
+  // },
+  // 'somafm': {
+  //   stream:  "http://38.104.130.91:8802/;", 
+  //   link:    "",
+  //   comment: "32k stream"
+  // },
+  'drw': {
+    stream:  "http://dradio.ic.llnwd.net/stream/dradio_dwissen_s_b.ogg", 
+    link:    "http://www.dradio.de/live_stream/",
+    comment: "DRadio Wissen, LQ"
+  }
+  // 'campus': {
+  //   stream:  "http://zaik-vs2.ad.uni-koeln.de:7998/;", 
+  //   link:    "http://koelncampus.com/kc/page/753/livestream.html",
+  //   comment: "KölnCampus, LQ 48k mono"
+  // },
+  // 'left': {
+  //   stream:  "media/audio/left.mp3", 
+  //   link:    "",
+  //   comment: "test file"
+  // },
+  // 'right': {
+  //   stream:  "media/audio/right.mp3", 
+  //   link:    "",
+  //   comment: "ttest file"
+  // },
+  // 'sweep': {
+  //   stream:  "media/audio/sweep.mp3", 
+  //   link:    "",
+  //   comment: "test 20hz 20khz"
+  // },
+};
