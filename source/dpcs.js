@@ -45,23 +45,21 @@ var DPCS = (function(){
       lastBctFrame,
 
       dynaValue = function (what){
-        return  (what === DYN) ? dyn :
-                (what === SPC) ? spc :
-                (what === VOL) ? vol :
-                (what === SIN) ? sin :
-                (what === COS) ? cos :
-                (what === RND) ? rnd :
-                (what === BDT) ? bdt :
-                (what === MOX) ? mox :
-                (what === MOY) ? moy :
-                  0.5;
+        return  (
+          (what === DYN) ? dyn :
+          (what === SPC) ? spc :
+          (what === VOL) ? vol :
+          (what === SIN) ? sin :
+          (what === COS) ? cos :
+          (what === RND) ? rnd :
+          (what === BDT) ? bdt :
+          (what === MOX) ? mox :
+          (what === MOY) ? moy :
+            0.5);
       },
       build = function(){
 
-        // var addition = Function("a", "b", "return a + b;");
-
         var p, para, params, t, targets;
-
         params  = ["dyn", "spc", "vol", "sin", "cos", "rnd", "bdt", "mox", "moy"];
         targets = {"a": "fnDim", "d": "fnDim", "f": "fnFlt", "r": "fnRot", "c": "fnCol"};
 
@@ -82,14 +80,13 @@ var DPCS = (function(){
 
       scale_0_255_LU = function(what, outLow, outUpp){
         return function(){
-          return (outUpp-outLow) * dynaValue(what) / 255 + outLow;
-        };
-      },
+          return (outUpp-outLow) * dynaValue(what) / 255 + outLow;};},
+
       range256Lookup = function(what, range){
         return function(){
-          return range[~~dynaValue(what)];
-        };
-      };
+          return range[~~dynaValue(what)];};}
+
+      ;
 
   return {
     boot: function(){
@@ -152,47 +149,7 @@ var DPCS = (function(){
       return range256Lookup(p, range);
     }
 
-    // this is ridiculous
-    // dyna: function(p1, p2){return fnDim(DYN, p1, p2);},
-    // dynd: function(p1, p2){return fnDim(DYN, p1, p2);},
-    // dynr: function(p1, p2){return fnRot(DYN, p1, p2);},
-    // dync: function(p1, p2){return fnCol(DYN, p1, p2);},
-    // dynf: function(p1, p2){return fnFlt(DYN, p1, p2);}, // must have p1
-
-    // vola: function(p1, p2){return fnDim(VOL, p1, p2);},
-    // vold: function(p1, p2){return fnDim(VOL, p1, p2);},
-    // volr: function(p1, p2){return fnRot(VOL, p1, p2);},
-    // volc: function(p1, p2){return fnCol(VOL, p1, p2);},
-    // volf: function(p1, p2){return fnFlt(VOL, p1, p2);}, // must have p1
-
-    // spca: function(p1, p2){return fnDim(SPC, p1, p2);},
-    // spcd: function(p1, p2){return fnDim(SPC, p1, p2);},
-    // spcr: function(p1, p2){return fnRot(SPC, p1, p2);},
-    // spcc: function(p1, p2){return fnCol(SPC, p1, p2);},
-    // spcf: function(p1, p2){return fnFlt(SPC, p1, p2);}, // must have p1
-
-    // sina: function(p1, p2){return fnDim(SIN, p1, p2);},
-    // sind: function(p1, p2){return fnDim(SIN, p1, p2);},
-    // sinr: function(p1, p2){return fnRot(SIN, p1, p2);},
-    // sinc: function(p1, p2){return fnCol(SIN, p1, p2);},
-
-    // cosa: function(p1, p2){return fnDim(COS, p1, p2);},
-    // cosd: function(p1, p2){return fnDim(COS, p1, p2);},
-    // cosr: function(p1, p2){return fnRot(COS, p1, p2);},
-    // cosc: function(p1, p2){return fnCol(COS, p1, p2);},
-
-    // bdta: function(p1, p2){return fnDim(BDT, p1, p2);},
-    // bdtd: function(p1, p2){return fnDim(BDT, p1, p2);},
-    // bdtr: function(p1, p2){return fnRot(BDT, p1, p2);},
-    // bdtc: function(p1, p2){return fnCol(BDT, p1, p2);},
-
-    // // runs linear in p1 seconds from p2 to p3
-    // lina: function(p1, p2, p3){return fnDim(SEC, p1, p2);},
-    // lind: function(p1, p2, p3){return fnDim(SEC, p1, p2);},
-    // linr: function(p1, p2, p3){return fnRot(SEC, p1, p2);},
-    // linc: function(p1, p2, p3){return fnCol(SEC, p1, p2);}
-
-  };
+  }; // return
 
 })().boot();  
 

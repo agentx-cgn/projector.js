@@ -21,15 +21,9 @@ EFX.Specials.Rain.prototype.load = function(onloaded){
   this.height = this.height || 1;
   this.clear  = this.clear  || true;
 
-  this.ops = {
-    a: 1, o: "sov", 
-    p: "cnt", l: 0.5, t: 0.5, w: 1, h: 1,
-    r: 0, 
-    c: "", 
-    bc: "", 
-    in: 16,   // number of images per frame
-    is: 0.05  // scale of image
-  };
+  this.ops.a  = 1;
+  this.ops.in = 1; // number of image
+  this.ops.is = 0.05; // image scale
 
   this.image = new Image();
   this.image.onload  = function ()  {
@@ -38,20 +32,9 @@ EFX.Specials.Rain.prototype.load = function(onloaded){
   this.image.onerror = function (e) {
     onloaded({event:e, device: "filter: " + self.name, message:"Could not load file: " + self.src});
   };
+
   this.image.src = this.src;
 
-};
-EFX.Specials.Rain.prototype.resize = function(){
-  if (typeof this.width === "string"){
-    this.source.width  = this.width;
-  } else {
-    this.source.width  = this.parent.source.width  * this.width;
-  }
-  if (typeof this.height === "string"){
-    this.source.height  = this.height;
-  } else {
-    this.source.height  = this.parent.source.height  * this.height;
-  }
 };
 EFX.Specials.Rain.prototype.beforeDraw = function(ops){
 
@@ -66,6 +49,7 @@ EFX.Specials.Rain.prototype.beforeDraw = function(ops){
     ctx.clearRect(0, 0, w, h);}
 
   for (i=0; i<n; i++) {
+    // ?? over or underscan ??
     // x = Math.random() * (w + tw) - tw/2;
     // y = Math.random() * (h + th) - th/2;
     x = Math.random() * (w - tw) + tw/2;
