@@ -1,325 +1,322 @@
 /*jslint browser: true, evil:true, devel: true, debug: true, nomen: true, plusplus: true, sloppy: true, vars: true, white: true, indent: 2 */
-/*globals Shows, EFX */
+/*globals Shows, EFX, Color */
 
 
-Shows.Demo = {
+Shows.demo = {
 
-  version: '0.9',
+  version: '0.5.0',
 
   config: {
     fps: 30,                  // target frames per secons
     pathMedia: "media/",      // for images and videos and playlists
-    backgroundColor: "black", // for all compositions
-    showDebug: 2,             // how much debug info 0 - 3, 0 * default
-    doClear: true             //
+    backColor: "black",       // for all compositions in this show
+    showDebug: 0,             // how much debug info 0 - 3, 0 * default
+    doClear: true,            // tells Projector to clean up after each frame
+    AAQ: 2                    // Audio Analysis Quality 
+                              // (0: disabled, 1: low, 2: good, 3: demanding / default=2 )
   },
 
   fonts : {
-
-    // http://www.wpdfd.com/issues/87/knowing_about_web_safe_fonts/
-    // http://tutorials.jenkov.com/html5-canvas/text.html
-
-    //     ["style", "weight", size, font-family, "align", "vertical"]
-
-    h1:    ["normal", "bold", 72, "sans-serif",  "left", "top"],
-    h2:    ["normal", "bold", 48, "sans-serif",  "left", "top"],
-    h3:    ["normal", "bold", 36, "sans-serif",  "left", "top"],
-    h4:    ["normal", "bold", 24, "sans-serif",  "left", "top"],
-    h5:    ["normal", "bold", 18, "sans-serif",  "left", "top"],
-    h6:    ["normal", "bold", 16, "sans-serif",  "left", "top"],
-    text:  ["normal", "bold", 14, "sans-serif",  "left", "top"], // * default
-    fix:   ["normal", "bold", 14, "'Courier New'", "left", "top"],
-    debug: ["normal", "bold", 12, "sans-serif",  "left", "top"]
+    //     ["style", "weight", size, "align", "font-family"]
+    h1:    ["normal", "bold", 72, "left", "sans-serif" ],
+    h2:    ["normal", "bold", 48, "left", "sans-serif" ],
+    h3:    ["normal", "bold", 36, "left", "sans-serif" ],
+    h4:    ["normal", "bold", 24, "left", "sans-serif" ],
+    h5:    ["normal", "bold", 18, "left", "sans-serif" ],
+    h6:    ["normal", "bold", 16, "left", "sans-serif" ],
+    text:  ["normal", "bold", 14, "left", "sans-serif" ], // * default
+    fix:   ["normal", "bold", 14, "left", "'Courier New'" ],
+    debug: ["normal", "bold", 12, "left", "sans-serif" ],
+    menu: ["normal", "normal", 0.04, "left",  "sans-serif"],
+    entryR: ["normal", "bold", 0.04, "right", "sans-serif"]
   },
 
   colors: {
-    debug: "yellow",
-    white: "white", // * default
+    debug:    "yellow",
+    white:    "white",
+    ToBlack:  "00000006",
+    ToRed:    "FF000006",
+    Wave:     "FFFFFFEE",
+    Spectrum: "white",
+    Trans:    "0000"
   },
 
-  effects: function(F, C){ return { 
+  ranges: function(C){
+    return {
+      'v':  Color("4008", 8, "FEEF", 120, "A008", 56, "FEEF", 8,  "0000",  8, "A00F", 56, "FEEF"),
+      'v1': Color("0000", 8, "FEEF", 120, "A008", 56, "FEEF", 8,  "0000",  8, "A00F", 56, "FEEF"),
+      'v2': Color("A00F", 128, "FEEF", 64, "A00F", 64, "FEEF"),
+      'v3': Color("334444FF", "FF7777FF"),
 
-    // remember: any Video or Camera defined here is constantly  
-    // playing or recording during a show - whether visible or not. 
-    // Mind the consumed CPU and GPU resources.
+      'b': Color("0000DDAA", "FFFFFFAA"),
+      'r1': Color("334444FF", "FF7777FF"), // Cor Rain
+      'r': Color("00FF", 256, "FF0F"), // Cor Rain
+      'd': Color("222288FF", "FFFF66FF"),
 
-    // generic, use to tets feedback
-    mse0: new EFX.Basic.Mouse({
-      src: 'mouse-target-red-dark.png',
-      srcTrans: 'mouse-transparent.png'
-    }),
+      't': Color("0000", 16, "A00F", 240, "FFEF")
+    };
+  },
 
-    // generic, zooms into center, blends slightly to black
-    fdb0: new EFX.Time.Blend({
-      width: 1, height: 1,
-      transform: {offX: 0, offY: 0, zoomX: 1.04, zoomY: 1.04, rot: 0}
-    }),
+  effects: function (F, R, C) { return { 
 
-    // fs, shifts left
-    fdbL: new EFX.Time.Blend({
-      width: 1, height: 1,
-      transform: {offX: -4, offY: 0, zoomX: 1.0, zoomY: 1.0, rot: 0}
-    }),
+// ---------------- Edit Effects below ----------------------------------------
 
-    // generic Waveform, fast and white
-    scm0: new EFX.Audio.Waveform({
-      pointWidth: 4,
-      pointStyle: "rgba(250, 250, 250, 0.94)"
-    }),
+      // generic, round mouse pointer (red/white)
+      mseR: new EFX.Basic.Mouse({
+        src: 'mouse-target-red-dark.png'
+      }),
 
-    // generic
-    vid0: new EFX.Basic.Video({
-      playbackRate: 1.5,
-      src: 'videos/flashy'
-    }),
+      // generic, crossed mouse ponter (red/white) 
+      mseC: new EFX.Basic.Mouse({
+        src: 'mouse-cross-red-dark.png'
+      }),
 
-    // generic
-    rec0: new EFX.Basic.Rectangle({
-    }),
+      MouseRoto: new EFX.Basic.Mouse({
+        src: 'mouse-roto-gre-yel.png'
+      }),
 
-    bmpC: new EFX.Basic.Bitmap({
-      width: 64, height: 64,
-      src: 'pattern/black-transparent-circle.png'
-    }),
+      MousePink: new EFX.Basic.Mouse({
+        src: 'mouse-pacman.png'
+      }),
 
-    // cam1: new EFX.Basic.Camera({
-    //   alpha: 1.0,
-    // }),
+      // 2 Layers
+      LayerA: new EFX.Basic.Null(), 
+      LayerB: new EFX.Basic.Null(), 
 
-    // Example of using a Pixastic Filter
-    pix1: new EFX.Basic.Pixa({
-      width: 128, height:128,
-      // options: {filter: "invert", invertAlpha: false }
-      options: {filter: "edges3",
-        tUpp: 188, tLow:68,
-        cUpp: [255, 100, 100, 250], cLow: [0, 0, 0, 50]}
-    }),
-    pixW: new EFX.Basic.Pixa({
-      width: 128, height:128,
-      options: {filter: "edges3",
-        tUpp: 188, tLow:68,
-        cUpp: [255, 255, 255, 250], cLow: [0, 0, 0, 50]}
-    }),
-    fdb4: new EFX.Time.Blend({
-      width: 0.5, height: 0.5,
-      transform: {offX: 0, offY: 0, zoomX: 1, zoomY: 1, rot: 20}
-    }),
-    pat1: new EFX.Basic.Pattern({
-      width: 80, height: 80,
-      src: "pattern/black-transparent-stripes.png"
-    }),
-    dyl0: new EFX.Text.DynaLine({
-      color: "rgba(250, 250, 250, 1)",
-      text: "HUHU"
-    })
+      // generic
+      ColorA: new EFX.Basic.Color(),
+      ColorB: new EFX.Basic.Color(),
 
-  };},
+      // generic
+      Rain: new EFX.Specials.Rain({
+        src: "pattern/white-transparent-dot.png"
+      }),
 
-/*------------------------ C O M P O S I T I O N S ----------------------------
+      // Background
+      BackA: new EFX.Time.Blend.Color(), 
+      BackB: new EFX.Time.Blend.Color(), 
+      BackC: new EFX.Time.Blend.Color(), 
 
-compositions: this returns and defines the filter graphs of the listed compositions.
-  Only the first 9 compos are available as show. E, F, C links to the above declared 
-  Effects, Fonts and Colors. D is the DPCS module.
+      //Awave rain
+      TimeAlphaA: new EFX.Time.Blend.Alpha(), 
+      TimeAlphaB: new EFX.Time.Blend.Alpha(), 
+      TimeAlphaC: new EFX.Time.Blend.Alpha(), 
 
-Each render function may have one parameter object (PO) and any amount of child renderers.
+      CircleA: new EFX.Basic.Circle(),
+      CircleB: new EFX.Basic.Circle(),
 
-A PO contains two sets of attribute, each of them overwrites a default value, 
-so they are not strictly needed: 
 
-  a, o, l, t, w, h, r, c : are render attributes (RA) and define how and where 
-    the effects get rendered. The one letter code makes them compact.
-  All other are treated as filter attribute (FA), check the filters to find out 
-    what is accepted
-  Any unknown attribute leads to an error!
+      FlashyA: new EFX.Basic.Video({
+        playbackRate: 1.5,
+        src: 'videos/flashy'
+      }),
 
-  The RA defaults:
-    a: 0.9,    
-    o: "sov",  
-    p: "rel",  
-    l: 0.5,    
-    t: 0.5,    
-    w: 0.8,    
-    h: 0.8     
-    r: 0.0,    
-    c: "",    
-  
-  a: alpha channel (0, transparent -> 1, opaque) 0.9 = default
+      // generic Waveform, fast and cyan?!
+      WaveA: new EFX.Audio.Waveform({
+        clear: true,
+        signalWidth: 3,
+        styleSignal: "black"
+      }),
 
-  o: composite operation, decribes how the effect is combined at byte level
-      with his parent effect, see HTML5 Canvas documentation
-    "cop" = "copy",
-    "xor" = "xor",
-    "lig" = "lighter",
-    "sov" = "source-over", * default
-    "sin" = "source-in",
-    "sou" = "source-out",
-    "sat" = "source-atop",
-    "dov" = "destination-over",
-    "din" = "destination-in",
-    "dou" = "destination-out",
-    "dat" = "destination-atop"
+      // with key
+      WaveB: new EFX.Audio.Waveform({
+        signalWidth: 0,
+        styleUnder: C.Trans
+      }),
 
-  p: position, 
-     works together with l, t, w, t as a shortcut to common settings
-    'rel' relative, * default
-    'cnt' center (sets w and h to .5)
-    'fil' fill   (sets w, h to 1.0, t, l to 0.0)
-    some filter overwrite this, e.g. Mouse
-    more to come ... (overscan, underscan, etc)
+      // generic Spectrum, fast and cyan
+      SpectrumA: new EFX.Audio.Spectrum({
+        clear: true,
+        signalWidth: 3,
+        styleSignal: "red"
+      }),
 
-  l: left,   (0 -> 1, "number"), defines the *center* of a effect,
-  t: top ,   (0 -> 1, "number"), defines the *center* of a effect,
-  w: width,  (0 -> 1, "number")
-  h: height, (0 -> 1, "number")
-    can be defined in absolute pixels as string e.g. "170" or 
-    relative to window dimensions as float e.g. 0.5 = half
-    relative arguments play nice on different screens and and can be dynamic
-    absolute pixels give you full placement control without any dynamic and
-    may get hidden if used unchanged as child of a smaller parent.
+      Words: new EFX.Text.RandomWords({
+        clear: true
+      }),
 
-  r: rotate (0.0 -> 360.0) clockwise, 0, default
+      Delay: new EFX.Time.Delay({
+        delay: 3 // seconds
+      }),
 
-  c: colorize, string, as PJS color format:
-        "red", names defined in XXXXX
-        "rgba( red, green, blue, alpha)", 
-            with r, g, b as integer with range (0-255) and 
-            alpha as float 0.0 - 1.0
-        "FFDDBB99", hex for r, g, b, a
-        "#3377bb", web hex for r, g, b, alpha = 1.0
-        "": no colorize, * default 
+      Edges: new EFX.Pixastic.Edges({
+      }),
 
-*/
-  compositions: function (E, F, C, D){return { 
+      Camera: new EFX.Basic.Camera({
+        mirror: true
+      }),
 
-    'DPCS Test' : {author: "noiv", date: "2012-11-01", comment: "", tree: [
-      // E.fdb0.render({a: 1}),
-      E.dyl0.render({text: "volume",   p: "rel", l:0.1, t:0.55, w: "256", h: "32"}),
-      E.dyl0.render({text: "richness", p: "rel", l:0.2, t:0.55, w: "256", h: "32"}),
-      E.dyl0.render({text: "dynamic",  p: "rel", l:0.3, t:0.55, w: "256", h: "32"}),
-      E.dyl0.render({text: "beat",     p: "rel", l:0.4, t:0.55, w: "256", h: "32"}),
-      E.dyl0.render({text: "sin 1hz",  p: "rel", l:0.5, t:0.55, w: "256", h: "32"}),
-      E.dyl0.render({text: "cos 1hz",  p: "rel", l:0.6, t:0.55, w: "256", h: "32"}),
-      E.rec0.render(
-        {a: 1,   p: "rel", t: D.sh(0.5, 0.3), l: 0.6, w: 0.05, h: D.sh(0, 0.4), c: "#AAA"}),
-      E.rec0.render(
-        {a: 1,   p: "rel", t: D.bh(0.5, 0.3), l: 0.5, w: 0.05, h: D.bh(0, 0.4), c: D.bc("d3172588", "f3cf4eFF")}),
-      E.mse0.render()
+
+      // Menu
+      Menu: new EFX.Text.List({
+        list: [
+          {id: 0, color: "white", font: F.menu, line: "Menu", click: function(){this.curCompo = 1;}},
+          {id: 1, color: "white", font: F.menu, line: "Color Spiral", click: function(){this.curCompo = 2;}},
+          {id: 2, color: "white", font: F.menu, line: "Dot Symphony", click: function(){this.curCompo = 3;}},
+          {id: 3, color: "white", font: F.menu, line: "Flow of Frequences", click: function(){this.curCompo = 4;}},
+          {id: 4, color: "white", font: F.menu, line: "Flow of Frequences II", click: function(){this.curCompo = 5;}},
+          {id: 5, color: "white", font: F.menu, line: "Deconstruction", click: function(){this.curCompo = 5;}},
+          {id: 6, color: "white", font: F.menu, line: "Symbol Tower", click: function(){this.curCompo = 5;}},
+          {id: 7, color: "white", font: F.menu, line: "Jupiter's Eye", click: function(){this.curCompo = 5;}},
+          {id: 8, color: "white", font: F.menu, line: "Random Sense", click: function(){this.curCompo = 5;}},
+          {id: 9, color: "white", font: F.menu, line: "Time Machine", click: function(){this.curCompo = 5;}}
+        ]
+      })
+
+// ---------------- Stop Editing Effects --------------------------------------
+
+    };},
+
+  compositions: function (E, F, R, C, D) { return {
+
+// ---------------- Edit Compositions below -----------------------------------
+
+
+
+    'Menu' : {author: "noiv", date: "2012-11-01", comment: "MENU Candidate", 
+      graph: [
+
+        E.LayerA.connect(
+          E.BackA.connect({a: 1, sx: 0.917, sy: 0.96, dx: 5, w: 1.1, h: 1.1}),
+          E.MouseRoto.connect({o: 'sov', a: D.vola(0.3, 0.9), r: D.secs(1,360)})
+        ),
+
+        E.LayerB.connect(
+          E.Menu.connect({id: 0, a: 0.9, o: 'sov', l: 0.7, t: 0.18}),
+          E.Menu.connect({id: 1, a: 0.9, o: 'sov', l: 0.7, t: 0.24}),
+          E.Menu.connect({id: 2, a: 0.9, o: 'sov', l: 0.7, t: 0.30}),
+          E.Menu.connect({id: 3, a: 0.9, o: 'sov', l: 0.7, t: 0.36}),
+          E.Menu.connect({id: 4, a: 0.9, o: 'sov', l: 0.7, t: 0.42}),
+          E.Menu.connect({id: 5, a: 0.9, o: 'sov', l: 0.7, t: 0.48}),
+          E.Menu.connect({id: 6, a: 0.9, o: 'sov', l: 0.7, t: 0.54}),
+          E.Menu.connect({id: 7, a: 0.9, o: 'sov', l: 0.7, t: 0.60}),
+          E.Menu.connect({id: 8, a: 0.9, o: 'sov', l: 0.7, t: 0.66}),
+          E.Menu.connect({id: 9, a: 0.9, o: 'sov', l: 0.7, t: 0.72})
+        )
+
     ]},
 
-    'roto blue yellow'  : {author: "tbc", date: "2012-11-01", comment: "", tree: [
-      E.fdb0.render({a: 1}),
-      E.fdb4.render(
-        {a: 0.6, p: "rel", t: 0.5, l: 0.5, w: 0.5, h: 0.5, r: 0}),
-      E.rec0.render(
-        {a: 1,   p: "rel", t: 0.5, l: 0.5, w: D.vw(0.0001, 0.1), h: D.dh(), c: D.pc("00004444", "FFFF00FF")}),
-      E.bmpC.render(
-        {a: 0.9, p: "cnt", t: 0.5, l: 0.5, w: D.vw(0.001,  0.16), h: D.pw(0.6, 0.1) }),
-      E.mse0.render()
+
+    'Color Spiral' : {author: "noiv", date: "2012-11-01", comment: "Group 1", 
+      graph: [
+
+        E.LayerA.connect(
+          E.BackA.connect({a: 1, sx: 0.9, sy: 0.9, dx: D.moxf(80, -80), dy: D.moyf(40, -40), w: 1.15, h: 1.15}),
+          E.MouseRoto.connect({o: 'sov', a: D.vola(1, 1), r: D.secs(1,360)})
+        )
+
     ]},
 
-    'histo'             : {author: "tbc", date: "2012-11-01", comment: "", tree: [
-      E.fdbL.render({a: 0.8}),
-      // E.rec0.render(
-      //   {a: 0.7, p: "rel", t: 0.5, l: 0.997, w: 0.003, h: D.ph(), c: "rgba(240,240,20,0.95)"}),
-      E.rec0.render(
-        {a: 0.9, p: "rel", t: 0.5, l: 0.999, w: 0.003, h: D.vh(), c: D.vc("FF0000FF", "ffff00EE")}),
-      E.mse0.render()
+
+    'Dot Symphony' : {author: "noiv", date: "2012-11-01", comment: "GROUP 1", 
+      graph: [
+
+        E.BackA.connect({a: 0.84, sx: 0.96, sy: 0.96, w: 1.1, h: 1.1}),
+
+        E.TimeAlphaA.connect({ba: 0.92, sx: 1.01, sy: 1.01, dx: D.moxf(-10, 10), dy: D.moyf(-10, 10)},
+          E.Rain.connect({amount: D.volf(12), size: D.dynf(0.01, 0.08)}),
+          E.ColorB.connect({"o": "sat", color: D.spcc(R.r)})
+        )
+
     ]},
 
-    'roto1'             : {author: "tbc", date: "2012-11-01", comment: "", tree: [
-      E.fdb0.render({a: 1}),
-      E.fdb4.render({a: 0.5, p: "cnt", t: 0.5, l: 0.5, r: 20}),
-      E.pixW.render({a: 0.6, p: "rel", t: 0.5, l: 0.5, w: 0.1, h: D.ph(), c:"rgba(110,0,0,0.0)"},
-        E.vid0.render({a: D.pa(), p: "rel", t: 0.5, l: 0.5, w: 1, h: 1})
-      ),
-      E.mse0.render()
+
+    'Flow of Frequences' : {author: "noiv", date: "2012-11-01", comment: "Group 1", 
+      graph: [
+
+          E.BackA.connect({a: 1, sx: 0.917, sy: 0.910, dx: 5, w: 1.1, h: 1.1}),
+
+          E.LayerA.connect({w: 0.99, h: 0.96},
+            E.WaveA.connect({o: "sov", a: 1, p: "rel",  l: 0.1, t: 0.5, h: 1, w: 0.25}),
+            E.ColorB.connect({o: "sat", a:1, color: D.spcc(R.d)})
+          ),
+
+          E.LayerB.connect({o: 'sov'},
+            E.TimeAlphaA.connect({sx: 1.01, sy: 1.01, dx: 10},
+              E.MousePink.connect({o: 'sov'})
+            )
+          )
+
+
+    ]}, 
+
+
+
+    'Flow of Frequences II' : {author: "noiv", date: "2012-11-01", comment: "Group 2", 
+      graph: [
+
+      E.TimeAlphaB.connect({ba: 1, dx: D.moxf(2, 24), sx: 1, sy: 1},
+
+        E.WaveA.connect({o: "lig", a: 1, p: "rel",  l: 0.1, t: 0.5, h: 1, w: 0.25}),
+        E.ColorB.connect({o: "sat", a:1, color: D.spcc(R.v)})
+
+      )
+
+
     ]},
 
-    'test1'             : {author: "tbc", date: "2012-11-01", comment: "", tree: [
-      E.fdb0.render({a: 1}),
-      E.fdb4.render({a: D.pa(), p: "cnt", t: 0.5, l: 0.5, r: 20}),
-      E.vid0.render({a: 0.6, p: "rel", t: 0.5, l: 0.5, w: 0.05, h: 1, c:"rgba(110,0,0,0.4)"}),
-      E.mse0.render()
+
+    'Deconstruction' : {author: "noiv", date: "2012-11-01", comment: "Group 2", 
+      graph: [
+
+      E.TimeAlphaB.connect({ba: 1, dx: D.moxf(-24, -2), sx: 1, sy: 1},
+
+        E.WaveB.connect({o: "sov", a: 1, p: "rel",  l: 0.875, t: 0.5, h: 1, w: 0.25},
+          E.FlashyA.connect({a:1, w: 1, h: 1, speed: D.moyf(0, 3)})
+        )
+
+      )
+
+
     ]},
 
-    'stripesbox'        : {author: "tbc", date: "2012-11-01", comment: "", tree: [
-      E.fdb0.render({a:0.985}),
-      E.vid0.render({a: 1,    p: "cnt", w: 0.4, h: 0.4}),
-      E.pat1.render({a: 1, p: "cnt", w: 0.4, h: 0.4}),
-      E.mse0.render({o: "lig"})
+
+    'Symbol Tower' : {author: "noiv", date: "2012-11-01", comment: "Group 2", 
+      graph: [
+
+        E.TimeAlphaB.connect({ba: 0.99, sx: D.volf(0.98, 1.2), sy: D.spcf(1, 1.12)},
+          E.FlashyA.connect({a:1, w: D.vold(0.2, 0.4), h: D.moxf(0.03, 2)})
+        )
+
     ]},
 
-    'pixa'              : {author: "tbc", date: "2012-11-01", comment: "", tree: [
-      E.fdb0.render({a:0.985}),
-      E.pix1.render({a: 0.8, p: "rel", t: 0.5, l: 0.5, w: 0.4, h: 0.4},
-        E.vid0.render({a: 1, w: 0.9, h: 1.2})
-      ),
-      E.pat1.render({a:0.975})
+
+    "Jupiter's Eye" : {author: "noiv", date: "2012-11-01", comment: "Group 2", 
+      graph: [
+
+        E.TimeAlphaB.connect({ba: 0.99, sy: D.volf(0.99, 1.1), sx: D.spcf(1, 1.1)},
+
+          E.CircleA.connect({a:1, h: D.vold(0.2, 0.4)}),
+          E.ColorA.connect({o: "sat", a:1, color: D.spcc(R.v)})
+
+        )
+
     ]},
 
-    'ozzi'              : {author: "tbc", date: "2012-11-01", comment: "", tree: [
-      E.fdb0.render({a:0.975}),
-      E.scm0.render({a:0.3, p: "cnt", w: 0.25, h: 1}),
-      E.mse0.render({o: "lig"})
+
+    'Random Sense' : {author: "noiv", date: "2012-11-01", comment: "Group 2", 
+      graph: [
+
+      E.TimeAlphaB.connect({ba: 0.98, sx: D.moyf(1.06, .98), sy: D.moyf(1.04, .98)},
+        E.Words.connect({w:1, o: "sov", h:0.4, r: D.moxf(-180, 180), color: D.spcc(R.v)})
+      )
+
     ]},
 
-    'flashy'            : {author: "tbc", date: "2012-11-01", comment: "", tree: [
-      E.fdb0.render({a:0.975}),
-      E.vid0.render({a:0.2, o: "sov", p: "fil"})
+
+    'Time Machine' : {author: "noiv", date: "2012-11-01", comment: "Group 3", 
+      graph: [
+
+        E.Delay.connect({a:1, p: "ash", h:1},
+          E.Camera.connect({a:1, p: "ash", h:1})
+        )
+        
     ]}
 
-    // 'faces'          : {author: "tbc", date: "2012-11-01", comment: "", tree: [
-    //   E.fdb0.render({a:0.975}),
-    //   E.vidf.render({a:0.2, o: "sov", p: "fil"})
-    // ]},
 
 
+// ---------------- Stop Editing Compositions ---------------------------------
 
-      // 'rightO'       : {author: "tbc", date: "2012-11-01", comment: "", tree: [
-      //   E.fdb4.render({alpha: 0.995, position: Pos("relative", {t: .5, l: .5, w: 1, h: 1})}),
-      //   E.scm4.render({alpha: .5,    position: Pos("relative", {t: .5, l: .75, w: .5, h: 1, rot:0})},
-      //     E.vid4.render({position: Pos("relative", {t: .5, l: .5, w: 1, h: 1})})
-      //   ),
-      //   E.mse1.render(),
-      // ]},
+  };} 
 
-      // 'ozzi'         : {author: "tbc", date: "2012-11-01", comment: "", tree: [
-      //   E.fdb1.render(),
-      //   E.scm1.render(),
-      //   E.mse1.render(),
-      // ]},
-
-      // 'video'        : {author: "tbc", date: "2012-11-01", comment: "", tree: [
-      //   E.fdb3.render(),
-      //   E.vid1.render(),
-      //   E.vid2.render(),
-      //   E.mse1.render(),
-      // ]},
-
-      // 'words'        : {author: "tbc", date: "2012-11-01", comment: "", tree: [
-      //   E.fdb2.render(),
-      //   E.wrd1.render(),
-      //   E.mse1.render(),
-      // ]},
-
-      // 'test1'        : {author: "tbc", date: "2012-11-01", comment: "", tree: [
-      //   E.bmp1.render(),
-      //   E.fdb1.render(),
-      //   E.bmp2.render(),
-      //   E.mse1.render(),
-      //   // E.cam1.render(),
-      //   E.scm1.render(),
-      // ]},
-
-      // 'black'        : {author: "tbc", date: "2012-11-01", comment: "", tree: [
-      //   E.fdbBlack.render(),
-      //   E.mse1.render(),
-      // ]},
-
-
-    };
-  }
-
-};
-
-
+};  

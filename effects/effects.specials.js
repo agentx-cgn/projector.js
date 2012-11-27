@@ -22,8 +22,8 @@ EFX.Specials.Rain.prototype.load = function(onloaded){
   this.clear  = this.clear  || true;
 
   this.ops.a  = 1;
-  this.ops.in = 1; // number of image
-  this.ops.is = 0.05; // image scale
+  this.ops.amount = 1; // number of image
+  this.ops.size = 0.05; // image scale
 
   this.image = new Image();
   this.image.onload  = function ()  {
@@ -38,23 +38,24 @@ EFX.Specials.Rain.prototype.load = function(onloaded){
 };
 EFX.Specials.Rain.prototype.beforeDraw = function(ops){
 
-  var i, x, y,ctx = this.ctx, 
-      n = Math.max(~~ops.in, 0),
-      w = this.source.width,
-      h = this.source.height,
-      tw = w * ops.is,
+  var i, x, y, ctx = this.ctx, 
+      n  = ~~ops.amount,
+      w  = this.source.width,
+      h  = this.source.height,
+      tw = w * ops.size,
       th = tw; // assuming quadratic image
 
   if (this.clear) {
-    ctx.clearRect(0, 0, w, h);}
-
-  for (i=0; i<n; i++) {
-    // ?? over or underscan ??
-    // x = Math.random() * (w + tw) - tw/2;
-    // y = Math.random() * (h + th) - th/2;
-    x = Math.random() * (w - tw) + tw/2;
-    y = Math.random() * (h - th) + th/2;
-    ctx.drawImage(this.image, x, y, tw, th);
+    ctx.setTransform(1, 0, 0, 1, 0, 0);
+    ctx.clearRect(0, 0, w, h);
+    for (i=0; i<n; i++) {
+      // ?? over or underscan ??
+      // x = Math.random() * (w + tw) - tw/2;
+      // y = Math.random() * (h + th) - th/2;
+      x = Math.random() * (w - tw) + tw/2;
+      y = Math.random() * (h - th) + th/2;
+      ctx.drawImage(this.image, x, y, tw, th);
+    }
   }
 
 };

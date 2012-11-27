@@ -1,5 +1,5 @@
 /*jslint browser: true, evil:true, devel: true, debug: true, nomen: true, plusplus: true, sloppy: true, vars: true, white: true, indent: 2 */
-/*globals Shows, EFX */
+/*globals Shows, EFX, Color */
 
 
 Shows.test = {
@@ -10,7 +10,7 @@ Shows.test = {
     fps: 30,                  // target frames per secons
     pathMedia: "media/",      // for images and videos and playlists
     backColor: "black",       // for all compositions in this show
-    showDebug: 3,             // how much debug info 0 - 3, 0 * default
+    showDebug: 2,             // how much debug info 0 - 3, 0 * default
     doClear: true,            // tells Projector to clean up after each frame
     AAQ: 2                    // Audio Analysis Quality 
                               // (0: disabled, 1: low, 2: good, 3: demanding / default=2 )
@@ -27,7 +27,7 @@ Shows.test = {
     text:  ["normal", "bold", 14, "left", "sans-serif" ], // * default
     fix:   ["normal", "bold", 14, "left", "'Courier New'" ],
     debug: ["normal", "bold", 12, "left", "sans-serif" ],
-    entryL: ["normal", "bold", 0.05, "left",  "sans-serif"],
+    menu: ["normal", "normal", 0.04, "left",  "sans-serif"],
     entryR: ["normal", "bold", 0.04, "right", "sans-serif"]
   },
 
@@ -37,10 +37,27 @@ Shows.test = {
     ToBlack:  "00000006",
     ToRed:    "FF000006",
     Wave:     "FFFFFFEE",
-    Spectrum: "white"
+    Spectrum: "white",
+    Trans:    "0000"
   },
 
-  effects: function (F, C) { return { 
+  ranges: function(C){
+    return {
+      'v':  Color("4008", 8, "FEEF", 120, "A008", 56, "FEEF", 8,  "0000",  8, "A00F", 56, "FEEF"),
+      'v1': Color("0000", 8, "FEEF", 120, "A008", 56, "FEEF", 8,  "0000",  8, "A00F", 56, "FEEF"),
+      'v2': Color("A00F", 128, "FEEF", 64, "A00F", 64, "FEEF"),
+      'v3': Color("334444FF", "FF7777FF"),
+
+      'b': Color("0000DDAA", "FFFFFFAA"),
+      'r1': Color("334444FF", "FF7777FF"), // Cor Rain
+      'r': Color("00FF", 256, "FF0F"), // Cor Rain
+      'd': Color("222288FF", "FFFF66FF"),
+
+      't': Color("0000", 16, "A00F", 240, "FFEF")
+    };
+  },
+
+  effects: function (F, R, C) { return { 
 
 // ---------------- Edit Effects below ----------------------------------------
 
@@ -49,93 +66,107 @@ Shows.test = {
         src: 'mouse-target-red-dark.png'
       }),
 
-      // generic, crossed mouse ponter (red/white)
+      // generic, crossed mouse ponter (red/white) 
       mseC: new EFX.Basic.Mouse({
         src: 'mouse-cross-red-dark.png'
       }),
 
+      MouseRoto: new EFX.Basic.Mouse({
+        src: 'mouse-roto-gre-yel.png'
+      }),
+
+      MousePink: new EFX.Basic.Mouse({
+        src: 'mouse-pacman.png'
+      }),
+
       // 2 Layers
-      lay0: new EFX.Basic.Null(), 
-      lay1: new EFX.Basic.Null(), 
-      layA: new EFX.Basic.Null(), 
-      layB: new EFX.Basic.Null(), 
+      LayerA: new EFX.Basic.Null(), 
+      LayerB: new EFX.Basic.Null(), 
 
       // generic
-      rec0: new EFX.Basic.Rectangle(),
+      ColorA: new EFX.Basic.Color(),
+      ColorB: new EFX.Basic.Color(),
 
       // generic
-      rain: new EFX.Specials.Rain({
+      Rain: new EFX.Specials.Rain({
         src: "pattern/white-transparent-dot.png"
       }),
 
-      // BG for al compos
-      tbl0: new EFX.Time.Blend.Color(), 
-      tblA: new EFX.Time.Blend.Alpha(), 
-      tblB: new EFX.Time.Blend.Alpha(), 
-      tblM: new EFX.Time.Blend.Color(), 
+      // Background
+      BackA: new EFX.Time.Blend.Color(), 
+      BackB: new EFX.Time.Blend.Color(), 
+      BackC: new EFX.Time.Blend.Color(), 
 
-      // generic, no zoom
-      tblN: new EFX.Time.Blend.Color({
-        width: 1, height: 1,
-        transform: {dx: 0, dy: 0, sx: 1, sy: 1, rot: 0}
-      }), 
+      //Awave rain
+      TimeAlphaA: new EFX.Time.Blend.Alpha(), 
+      TimeAlphaB: new EFX.Time.Blend.Alpha({dom: true}), 
+      TimeAlphaC: new EFX.Time.Blend.Alpha(), 
 
-      // generic, zoom .04
-      tbl1: new EFX.Time.Blend.Color({
-        width: 1, height: 1,
-        transform: {dx: 0, dy: 0, sx: 1.02, sy: 1.02, rot: 0}
-      }), 
+      CircleA: new EFX.Basic.Circle(),
+      CircleB: new EFX.Basic.Circle(),
 
-      // half height
-      tblH2: new EFX.Time.Blend.Color({
-        width: 1, height: 0.5,
-        transform: {dx: 3, dy: 0, sx: 1, sy: 1, rot: 0}
-      }), 
 
-      // half width, zoom .04
-      tblH: new EFX.Time.Blend.Color({
-        width: 0.5, height: 1,
-        transform: {dx: 0, dy: 0, sx: 1.04, sy: 1.04, rot: 0}
+      FlashyA: new EFX.Basic.Video({
+        playbackRate: 1.5,
+        src: 'videos/flashy'
       }),
 
       // generic Waveform, fast and cyan?!
-      wav0: new EFX.Audio.Waveform({
-        dom: true,
+      WaveA: new EFX.Audio.Waveform({
+        clear: true,
         signalWidth: 3,
-        styleSignal: "white"
+        styleSignal: "black"
+      }),
+
+      // with key
+      WaveB: new EFX.Audio.Waveform({
+        signalWidth: 0,
+        styleUnder: C.Trans
       }),
 
       // generic Spectrum, fast and cyan
-      spc0: new EFX.Audio.Spectrum({
-        // dom: true,
+      SpectrumA: new EFX.Audio.Spectrum({
+        clear: true,
         signalWidth: 3,
-        // styleUnder:  "#888888",
         styleSignal: "red"
       }),
 
-
-      // Menu
-      txlM: new EFX.Text.List({
-        list: [
-          {id: 0, color: "white", font: F.entryL, line: "Intro", click: function(){this.curCompo = 1;}},
-          {id: 1, color: "white", font: F.entryL, line: "Random Words", click: function(){this.curCompo = 2;}},
-          {id: 2, color: "white", font: F.entryL, line: "Video", click: function(){this.curCompo = 3;}},
-          {id: 3, color: "white", font: F.entryL, line: "Camera", click: function(){this.curCompo = 4;}},
-          {id: 4, color: "white", font: F.entryL, line: "Wormhole", click: function(){this.curCompo = 5;}}
-        ]
+      Words: new EFX.Text.RandomWords({
+        clear: true
       }),
 
-      // DPCS
-      txlD: new EFX.Text.List({
+      Delay: new EFX.Time.Delay({
+        delay: 60
+      }),
+
+      Edges: new EFX.Pixastic.Edges({
+        dom: true
+      }),
+
+      Gestures: new EFX.Gestures.Basic({
+        dom: true, 
+        width: 64, height: 64
+      }),
+
+      // Camera: new EFX.Basic.Camera({
+      //   dom: true, 
+      //   mirror: true
+      // }),
+
+
+      // Menu
+      Menu: new EFX.Text.List({
         list: [
-          {id: 0, color: "white", font: F.entryR, line: "Volume"},
-          {id: 1, color: "white", font: F.entryR, line: "Dynamic"},
-          {id: 2, color: "white", font: F.entryR, line: "Spectrum"},
-          {id: 3, color: "white", font: F.entryR, line: "Sinus"},
-          {id: 4, color: "white", font: F.entryR, line: "Cosinus"},
-          {id: 5, color: "white", font: F.entryR, line: "Beat"},
-          {id: 6, color: "white", font: F.entryR, line: "Waveform"},
-          {id: 7, color: "white", font: F.entryR, line: "Spectrum"}
+          {id: 0, color: "white", font: F.menu, line: "Menu", click: function(){this.curCompo = 1;}},
+          {id: 1, color: "white", font: F.menu, line: "Color Spiral", click: function(){this.curCompo = 2;}},
+          {id: 2, color: "white", font: F.menu, line: "Dot Symphony", click: function(){this.curCompo = 3;}},
+          {id: 3, color: "white", font: F.menu, line: "Flow of Frequences", click: function(){this.curCompo = 4;}},
+          {id: 4, color: "white", font: F.menu, line: "Flow of Frequences II", click: function(){this.curCompo = 5;}},
+          {id: 5, color: "white", font: F.menu, line: "Deconstruction", click: function(){this.curCompo = 5;}},
+          {id: 6, color: "white", font: F.menu, line: "Symbol Tower", click: function(){this.curCompo = 5;}},
+          {id: 7, color: "white", font: F.menu, line: "Jupiter's Eye", click: function(){this.curCompo = 5;}},
+          {id: 8, color: "white", font: F.menu, line: "Random Sense", click: function(){this.curCompo = 5;}},
+          {id: 9, color: "white", font: F.menu, line: "Time Machine", click: function(){this.curCompo = 5;}}
         ]
       })
 
@@ -143,98 +174,175 @@ Shows.test = {
 
     };},
 
-  compositions: function (E, F, C, D) { return { 
+  compositions: function (E, F, R, C, D) { return {
 
 // ---------------- Edit Compositions below -----------------------------------
 
-    // 'Wave' : {author: "noiv", date: "2012-11-01", comment: "", 
-    //   graph: [
 
-    //       E.wav0.connect({a: 1, p: "rel",  l: 0.5, t: 0.5, h: 1, w: 0.125}),
 
-    // ]},
-
-    'Rain' : {author: "noiv", date: "2012-11-01", comment: "", 
+    'Gestures' : {author: "noiv", date: "2012-11-01", comment: "Group 2", 
       graph: [
 
-          E.tblM.connect({a: 0.84, sx: 0.96, sy: 0.96, w: 1.1, h: 1.1}),
+        E.Gestures.connect({a:0.5, o: "sov", p: "fix", l:-100, t:16, h: "64", w: "64"}),
+        E.ColorA.connect({a:0.5, o: "sov", h: 0.5, w: 0.5, color:"red"})
+        
+    ]},
 
-          E.tblB.connect({sx: 1.04, sy: 1.04, dx: 10},
-            E.rain.connect(
-              {in: D.volf(14), is: D.dynf(0.02, 0.1), bc: D.spcc("FF000060", "FFFF00FF")})
-          ),
 
-          E.mseC.connect({o: 'lig'})
+
+
+    // 'Edge' : {author: "noiv", date: "2012-11-01", comment: "", 
+    //   graph: [
+
+    //     E.TimeAlphaB.connect({ba: 1, sx: 1.1, sy: 0.9},
+
+    //       E.LayerA.connect({a:1, w: 1, h: 1},
+
+    //         E.Edges.connect({a:1, w: 0.5, h: 1},
+    //           E.FlashyA.connect({a:1, w: 1, h: 1, speed: 0.5})
+    //         ),
+    //         E.ColorA.connect({o: "sat", a:1, color: D.spcc(R.v)})
+
+    //       )
+        
+    //     )
+
+
+    // ]}, 
+
+
+    'Menu' : {author: "noiv", date: "2012-11-01", comment: "MENU Candidate", 
+      graph: [
+
+        E.LayerA.connect(
+          E.BackA.connect({a: 1, sx: 0.917, sy: 0.96, dx: 5, w: 1.1, h: 1.1}),
+          E.MouseRoto.connect({o: 'sov', a: D.vola(0.3, 0.9), r: D.secs(1,360)})
+        ),
+
+        E.LayerB.connect(
+          E.Menu.connect({id: 0, a: 0.9, o: 'sov', l: 0.7, t: 0.18}),
+          E.Menu.connect({id: 1, a: 0.9, o: 'sov', l: 0.7, t: 0.24}),
+          E.Menu.connect({id: 2, a: 0.9, o: 'sov', l: 0.7, t: 0.30}),
+          E.Menu.connect({id: 3, a: 0.9, o: 'sov', l: 0.7, t: 0.36}),
+          E.Menu.connect({id: 4, a: 0.9, o: 'sov', l: 0.7, t: 0.42}),
+          E.Menu.connect({id: 5, a: 0.9, o: 'sov', l: 0.7, t: 0.48}),
+          E.Menu.connect({id: 6, a: 0.9, o: 'sov', l: 0.7, t: 0.54}),
+          E.Menu.connect({id: 7, a: 0.9, o: 'sov', l: 0.7, t: 0.60}),
+          E.Menu.connect({id: 8, a: 0.9, o: 'sov', l: 0.7, t: 0.66}),
+          E.Menu.connect({id: 9, a: 0.9, o: 'sov', l: 0.7, t: 0.72})
+        )
 
     ]},
 
-    'Wave' : {author: "noiv", date: "2012-11-01", comment: "", 
+
+    'Color Spiral' : {author: "noiv", date: "2012-11-01", comment: "Group 1", 
       graph: [
 
-          E.tblM.connect({a: 1, sx: 0.94, sy: 0.92, dx: 5, w: 1.1, h: 1.1}),
-          E.wav0.connect({a: 1, p: "rel",  l: 0.5, t: 0.5, h: 1, w: 0.25}),
-          E.mseC.connect({o: 'lig'})
+        E.LayerA.connect(
+          // E.BackA.connect({a: 0.98, sx: 1, sy: 1, dx: 5, w: 1.1, h: 1.1}),
+          E.BackA.connect({a: 1, sx: 0.9, sy: 0.9, dx: D.moxf(80, -80), dy: D.moyf(40, -40), w: 1.15, h: 1.15}),
+          E.MouseRoto.connect({o: 'sov', a: D.vola(1, 1), r: D.secs(1,360)})
+        )
+
+    ]},
+
+
+    'Dot Symphony' : {author: "noiv", date: "2012-11-01", comment: "GROUP 1", 
+      graph: [
+
+        E.BackA.connect({a: 0.84, sx: 0.96, sy: 0.96, w: 1.1, h: 1.1}),
+
+        E.TimeAlphaA.connect({ba: 0.92, sx: 1.01, sy: 1.01, dx: D.moxf(-10, 10), dy: D.moyf(-10, 10)},
+          E.Rain.connect({amount: D.volf(12), size: D.dynf(0.01, 0.08)}),
+          E.ColorB.connect({"o": "sat", color: D.spcc(R.r)})
+        )
+
+    ]},
+
+
+    'Flow of Frequences' : {author: "noiv", date: "2012-11-01", comment: "Group 1", 
+      graph: [
+
+          E.BackA.connect({a: 1, sx: 0.917, sy: 0.910, dx: 5, w: 1.1, h: 1.1}),
+
+          E.LayerA.connect({w: 0.99, h: 0.96},
+            E.WaveA.connect({o: "sov", a: 1, p: "rel",  l: 0.1, t: 0.5, h: 1, w: 0.25}),
+            E.ColorB.connect({o: "sat", a:1, color: D.spcc(R.d)})
+          ),
+
+          E.LayerB.connect({o: 'sov'},
+            E.TimeAlphaA.connect({sx: 1.01, sy: 1.01, dx: 10},
+              E.MousePink.connect({o: 'sov'})
+            )
+          )
+
+
+    ]}, 
+
+
+
+    'Flow of Frequences II' : {author: "noiv", date: "2012-11-01", comment: "Group 2", 
+      graph: [
+
+      E.TimeAlphaB.connect({ba: 1, dx: D.moxf(2, 24), sx: 1, sy: 1},
+        E.WaveA.connect({o: "lig", a: 1, p: "rel",  l: 0.1, t: 0.5, h: 1, w: 0.25}),
+        E.ColorB.connect({o: "sat", a:1, color: D.spcc(R.v)})
+      )
+
+
+    ]},
+
+
+    'Deconstruction' : {author: "noiv", date: "2012-11-01", comment: "Group 2", 
+      graph: [
+
+
+      E.TimeAlphaB.connect({ba: 1, dx: D.moxf(-24, -2), sx: 1, sy: 1},
+        E.WaveB.connect({o: "sov", a: 1, p: "rel",  l: 0.875, t: 0.5, h: 1, w: 0.25},
+          E.FlashyA.connect({a:1, w: 1, h: 1, speed: D.moyf(0, 3)})
+          )
+      )
+
+
+    ]},
+
+
+    'Symbol Tower' : {author: "noiv", date: "2012-11-01", comment: "Group 2", 
+      graph: [
+
+        E.TimeAlphaB.connect({ba: 0.99, sx: D.volf(0.98, 1.2), sy: D.spcf(1, 1.12)},
+          E.FlashyA.connect({a:1, w: D.vold(0.2, 0.4), h: D.moxf(0.03, 2)})
+        )
+
+    ]},
+
+
+    "Jupiter's Eye" : {author: "noiv", date: "2012-11-01", comment: "Group 2", 
+      graph: [
+
+        E.TimeAlphaB.connect({ba: 0.99, sy: D.volf(0.99, 1.1), sx: D.spcf(1, 1.1)},
+          E.CircleA.connect({a:1, h: D.vold(0.2, 0.4)}),
+          E.ColorA.connect({o: "sat", a:1, color: D.spcc(R.v)})
+        )
+
+    ]},
+
+
+    'Random Sense' : {author: "noiv", date: "2012-11-01", comment: "Group 2", 
+      graph: [
+
+      E.TimeAlphaB.connect({ba: 0.98, sx: D.moyf(1.06, .98), sy: D.moyf(1.04, .98)},
+
+        E.Words.connect({w:1, h:0.4, r: D.moxf(-180, 180)}),
+        E.ColorB.connect({o: "sin", a:1, color: D.spcc(R.t)})
+
+      )
+
 
     ]}
 
-    // 'Test Single' : {author: "noiv", date: "2012-11-01", comment: "", 
-    //   graph: [
 
-    //       // E.tbl0.connect({sx: D.volf(1.0, 1.1), sy: 1.04, a: 0.97, c: C.ToBlack}),
-    //       E.tbl0.connect({sx: 1.04, sy: 1.04, a: 0.97, c: C.ToBlack}),
-    //       E.txlD.connect({id: 0, a: 0.9, o: 'sov', l: 0.5, t: 0.2}),
-    //       E.mseC.connect({o: 'lig'})
 
-    // ]},
-
-    // 'Test Double' : {author: "noiv", date: "2012-11-01", comment: "", 
-    //   graph: [
-
-    //       E.tbl0.connect({sx: 0.96, sy: 0.96, a: 0.97, c: C.ToBlack}),
-    //       E.txlD.connect({id: 1, a: 0.9, o: 'sov', l: 0.7, t: 0.2}),
-    //       E.mseR.connect({o: 'lig'})
-
-    // ]},
-
-    // 'Test Dynamics' : {author: "noiv", date: "2012-11-01", comment: "", 
-    //   graph: [
-
-    //     E.tbl0.connect({a: 0.99, c: C.ToBlack, w: 1, h: 1}),
-    //     // E.tblN.connect({a: 0.8, c: C.ToBlack}),
-
-    //     E.rec0.connect(
-    //       {a: .9, p: "rel", l: D.vold(0.72, 0.82), t: 0.2,  h: 0.03, w: D.vold(0, 0.2), c: "#AAAAAA"}),
-    //     E.rec0.connect(
-    //       {a: .9, p: "rel", l: D.dynd(0.72, 0.82), t: 0.25, h: 0.03, w: D.dynd(0, 0.2), c: "#d31725"}),
-    //     E.rec0.connect(
-    //       {a: .9, p: "rel", l: D.spcd(0.72, 0.82), t: 0.3,  h: 0.03, w: D.spcd(0, 0.2), c: "#987654"}),
-    //     E.rec0.connect(
-    //       {a: .9, p: "rel", l: D.sind(0.72, 0.82), t: 0.35, h: 0.03, w: D.sind(0, 0.2), c: "#a98765"}),
-    //     E.rec0.connect(
-    //       {a: .9, p: "rel", l: D.cosd(0.72, 0.82), t: 0.4,  h: 0.03, w: D.cosd(0, 0.2), c: "#ba9876"}),
-    //     E.rec0.connect(
-    //       {a: .9, p: "rel", l: D.bdtd(0.72, 0.82), t: 0.45, h: 0.03, w: D.bdtd(0, 0.2), c: "#cba987"}),
-
-    //     E.tblH2.connect({a: 0.8,  p: "rel",  l: 0.5, t: 0.75, h: 0.5, w: 1},
-    //       E.wav0.connect({a: 1, p: "rel",  l: 0.5, t: 0.5, h: 0.9, w: 0.125}),
-    //       E.spc0.connect({a: 1, p: "rel",  l: 0.8, t: 0.5, h: 0.9, w: 0.125})
-    //     ),
-
-    //     E.txlD.connect({id: 0, a: 0.9, o: 'sov', l: 0.7, t: 0.2}),
-    //     E.txlD.connect({id: 1, a: 0.9, o: 'sov', l: 0.7, t: 0.25}),
-    //     E.txlD.connect({id: 2, a: 0.9, o: 'sov', l: 0.7, t: 0.3}),
-    //     E.txlD.connect({id: 3, a: 0.9, o: 'sov', l: 0.7, t: 0.35}),
-    //     E.txlD.connect({id: 4, a: 0.9, o: 'sov', l: 0.7, t: 0.4}),
-    //     E.txlD.connect({id: 5, a: 0.9, o: 'sov', l: 0.7, t: 0.45}),
-
-    //     E.mseR.connect({o: 'lig'})
-    // ]},
-
-    // 'MustWork' : {author: "noiv", date: "2012-11-01", comment: "", 
-    //   graph: [
-    //     E.tbl0.connect({a:0.98}),
-    //     E.mseC.connect()
-    // ]}
 
 
 

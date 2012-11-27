@@ -5,9 +5,12 @@ var Projector = (function(){
 
   var i, self, width, height, cvs, ctx, help, 
 
+      version = "0.5.0",
+
       overlay  = {ctx: null, cvs: null},
 
       doMaxFrames = 0,
+
       doRender = true, doAnimate = true, doClear = true, 
       showDebug = false, showHelp = false, showSpots = false,
       showAudio = false, showOutline = false,
@@ -18,7 +21,7 @@ var Projector = (function(){
       shows = {},
       curShow,
       hasShowLoaded = false,
-      compos = [], curCompo = 1, filters = [], menu = [],
+      compos = [], curCompo = 0, filters = [], menu = [],
 
       tickActions = [],
 
@@ -34,10 +37,6 @@ var Projector = (function(){
       },
 
       test = {}, 
-
-      // optionsRender  = {};
-      // optionsCollect = {filters: []};
-      // optionsLink    = {width: null, height: null};
 
       tim = {
         rate: 30, rends: 0, anims: 0,
@@ -71,7 +70,7 @@ var Projector = (function(){
       function r (n, p){var e = Math.pow(10, p || 1); return ~~(n*e)/e;}
       function error (e, device, msg ){return {event: e, device: device, message: msg};}
 
-      function toggleHiden(){
+      function toggleHidden(){
         var ps = document.getElementById("projector").style,
             hs = document.getElementById("hidden").style;
 
@@ -83,12 +82,26 @@ var Projector = (function(){
           hs.display = "none";
         }
       }
+      function toggleEditor(){
+        var ps = document.getElementById("projector").style,
+            es = document.getElementById("editor").style;
+
+        if (ps.display !== "none"){
+          ps.display = "none";
+          es.display = "block";
+        } else {
+          ps.display = "block";
+          es.display = "none";
+        }
+      }
 
   return {
+    name: "Projector",
     init: function(){
 
       self = this;
 
+      this.__defineGetter__('version', function(){return version;});
       this.__defineGetter__('source',  function(){return cvs;});
       this.__defineGetter__('mouse',   function(){return mouse;});
       this.__defineGetter__('frame',   function(){return tim.rends;});
@@ -102,7 +115,6 @@ var Projector = (function(){
       this.__defineGetter__('width',   function(){return width;});
       this.__defineGetter__('height',  function(){return height;});
       this.__defineGetter__('ctx',     function(){return ctx;});
-      // this.__defineGetter__('cvs',     function(){return cvs;});
       this.__defineGetter__('videoextension', function(){return videoextension;});
       this.__defineGetter__('audioplayer',    function(){return AudioPlayer;});
 
@@ -126,24 +138,31 @@ var Projector = (function(){
       overlay.cvs.style.backgroundColor = "black"; // colorTrans;
 
       if (hasShowLoaded){
-        compos[curCompo].link(self);}
+        compos.forEach(function(cmp){
+          cmp.link(self);
+        });
+      }
 
     },
     info: function (what) {
 
       var f, filt, c, comp, sum = 0;
 
-      if (what === "filters") {
-        for (f in filters){
+      if (what === "graph") {
+        compos[curCompo].log();
+
+      } else if (what === "filters") {
+        // for (f in filters){
+        console.log(compos[curCompo].name);
+        for (f in compos[curCompo].filters){
           filt = filters[f];
-          if (filt.lastRect.length) {
-            console.log(filt.name, filt.type(), 
-              H.roundA(filt.lastRect, 2) + "\n",
-              H.roundA(filt.lastTrans, 2) + "\n",
-              JSON.stringify(filt.lastOps) + "\n",
-              H.roundA(filt.lastInfo, 2) + "\n"
-            );
-          }
+          console.log(filt._name, 
+            (filt.parent) ? "P=" + filt.parent._name : "NOP", //filt.type(), 
+            H.roundA(filt.lastRect, 2) + "\n",
+            H.roundA(filt.lastTrans, 2) + "\n",
+            JSON.stringify(filt.lastOps) + "\n",
+            H.roundA(filt.lastInfo, 2) + "\n"
+          );
         }
       } else if (what === "compos") {
         for (c in compos){
@@ -155,9 +174,9 @@ var Projector = (function(){
       }
 
     },
-    renderSpots: function (ctx) {
+    // renderSpots: function (ctx) {
 
-    },
+    // },
     renderText: function (ctx, s, l, t, a, c) {
 
       var i = 0, lh = 12, lines = s.length;
@@ -178,51 +197,84 @@ var Projector = (function(){
     },
     renderDPCS: function(ctx){
       var i,
-          t = padding,
-          h = 16,
+          t  = padding,
+          h  = 16,
           ap = AudioPlayer,
           db = ap.dynaband,
-          fft = AudioPlayer.dataDPCS,
-          len = fft.length,
-          spec = (len*2-1)*AudioPlayer.spectrum/255,
-          dyna = (h)*AudioPlayer.dynamic/255,
-          volu = (h)*AudioPlayer.volume/255,
-          l = width - padding - (len *2);
+          fft  = ap.dataDPCS,
+          len  = fft.length,
+          spec = (len*2-1)*ap.spectrum/255,
+          dyna = (h)*ap.dynamic/255,
+          volu = (h)*ap.volume/255,
+          vola = ap.avgvolume,
+          l    = width - padding - (len *2),
+          fpsq = h - (1000/tim.bfFram.avg()/tim.rate) *h,
+          bc   = ap.BeatCount % 4,
+          icon = "", il = l, it=t, iw=24, ih=24;
+
+      if (typeof vola !== "number"){console.log(vola);}
+
+      if (vola === 0) { // buffer empty
+        if (ap.statusAudio === "mute"){icon = "icon-audio-error";}
+        if (ap.statusAudio === "error"){icon = "icon-audio-error";}
+        if (ap.statusAudio === "playing"){icon = "icon-audio-silence";}
+        ctx.drawImage(document.getElementById(icon), il, it, iw, ih);
+        return;}
+
+      if (volu === 0) { // tick empty
+        if (ap.statusAudio === "mute"){icon = "icon-audio-error";}
+        if (ap.statusAudio === "error"){icon = "icon-audio-error";}
+        if (ap.statusAudio === "playing"){icon = "icon-audio-nodata";}
+        ctx.drawImage(document.getElementById(icon), il, it, iw, ih);
+        return;}
 
       // Volume vertical
       ctx.fillStyle = "rgba(0, 255, 0, 1)";
-      ctx.fillRect(l-2, t+h, 3, -volu);
-
-      // Dyna vertical
-      ctx.fillStyle = "rgba(255, 255, 255, 1)";
-      ctx.fillRect(l+2, t+h, 1, -dyna);
+      ctx.fillRect(l-2, t+h, 5, -volu);
 
       // Spectrum, dyna marked
       for (i=0; i<len; i++){
         if (i === db){
           ctx.fillStyle = "rgba(255, 0, 0, 1)";
+          ctx.fillRect(l+5 + i*2, t+h, 1, -dyna);
         } else {
           ctx.fillStyle = "rgba(255, 255, 0, 1)";
+          ctx.fillRect(l+5 + i*2, t+h, 1, -h*fft[i]/255);
         }
-        ctx.fillRect(l+5 + i*2, t+h, 1, -h*fft[i]/255);
       }
+
+      // beat counter
+      ctx.fillStyle = "#3c95d9";
+      ctx.fillRect(l +4 + bc *8, t + h + 2, 8, 1);
 
       // Spectrum horizontal
       ctx.fillStyle = "rgba(255, 255, 0, 1)";
-      ctx.fillRect(l+5, t + h + 2, spec, 1);
+      ctx.fillRect(l+5, t + h + 4, spec, 1);
+
+
+      // fpsq vertical > +/- 3% are indicated
+      if (fpsq < -0.5) {
+        ctx.fillStyle = "rgba(0, 255, 0, 1)";
+        ctx.fillRect(l-6, t+h, 3, fpsq);}
+
+      if (fpsq >  0.5) {
+        ctx.fillStyle = "rgba(255, 0, 0, 1)";
+        ctx.fillRect(l-6, t+h, 3, fpsq);}
+
+
 
     },
     renderDebug: function(ctx){
 
-      var i, len, top, deb = [], track = AudioPlayer.trackInfo, fft,
-          bd = AudioPlayer.BeatDetector,
+      var i, len, top, deb = [], 
+          fft, track = AudioPlayer.trackInfo,
+          ap = AudioPlayer,
+          bd  = (ap.BeatDetector) ? ap.BeatDetector : {beat_counter: 0, win_bpm_int:0},
           cFps, cFPSQuality, cFPSJitter;
 
       if (showDebug === 0){
         // do nothing at all
       } else if (showDebug === 1) {
-        // do nothing ehere
-      } else if (showDebug === 2) {
 
         cFps = 1000/tim.bfFram.avg();
         cFPSQuality = cFps/tim.rate*100;
@@ -245,7 +297,7 @@ var Projector = (function(){
                        " J:" + r(bd.bpm_offset, 4)
         );
 
-      } else if (showDebug === 3) {
+      } else if (showDebug === 2) {
 
         deb.push(" ",
           "show:   " + curShow.name + "/" + menu[curCompo] + " (" + (curCompo) + "/" + compos.length + ")",
@@ -270,12 +322,6 @@ var Projector = (function(){
                        " Q:" + ~~bd.quality_total + 
                        " J:" + r(bd.bpm_offset, 4)
 
-          // bpm = beatdetector.win_bpm_int/10;
-          // bpmQuality = parseInt(beatdetector.quality_total*1000.0)/1000.0);
-          // bpmJitter = parseInt(beatdetector.bpm_offset*1000000.0)/1000000.0);
-          // bpmBeatCount = beatdetector.beat_counter;
-
-
         );
 
         if (track.length === 1) {
@@ -291,23 +337,6 @@ var Projector = (function(){
       }
       top = self.renderText(ctx, deb, padding, padding, "left", curShow.colors.debug || "yellow");
 
-      // if (showDPCS) {
-      //   self.renderDPCS(ctx);
-      // }
-      //   deb.push("volume:", "spect:", "dyna:", "fft:");
-      //   top = self.renderText(ctx, deb, padding, padding, "left", curShow.colors.debug || "yellow");
-      //   ctx.fillRect(padding + 57, top-54, AudioPlayer.volume/2.55,  padding/2 -2);
-      //   ctx.fillRect(padding + 57, top-42, AudioPlayer.spectrum/2.55,   padding/2 -2);
-      //   ctx.fillRect(padding + 57, top-30, AudioPlayer.dynamic/2.55, padding/2 -2);
-      //   fft = AudioPlayer.dataDPCS;
-      //   len = fft.length;
-      //   for (i=0; i<len; i++){
-      //     ctx.fillRect(padding + 57, top-18 + i*2, fft[i]/2.55 + 1, 1);
-      //   }
-      // } else {
-      // }
-
-
     },
     toggleMouse: function (what){
       // cursor: url('data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAAAXNSR0IArs4c6QAAAARnQU1BAACxjwv8YQUAAAAJcEhZcwAADsMAAA7DAcdvqGQAAAAZdEVYdFNvZnR3YXJlAFBhaW50Lk5FVCB2My41LjbQg61aAAAADUlEQVQYV2P4//8/IwAI/QL/+TZZdwAAAABJRU5ErkJggg=='),
@@ -315,13 +344,18 @@ var Projector = (function(){
       // none !important;
       console.log("P.toggleMouse", what);
     },
-    toggleAudio: function (){
-      showAudio = !showAudio;
+    toggleAudio: function (param){
+
+      if (typeof param !== "undefined"){
+        showAudio = !!param;} 
+      else {
+        showAudio = !showAudio;}
+
       if (showAudio){
-        document.getElementById("audioselector").style.display = "block";
-      } else {
-        document.getElementById("audioselector").style.display = "none";
-      }
+        document.getElementById("audioselector").style.display = "block";} 
+      else {
+        document.getElementById("audioselector").style.display = "none";}
+        
     },
 
 
@@ -388,20 +422,34 @@ var Projector = (function(){
       ],[ 'a right',  function(e){AudioPlayer.next();          return eat(e); }
       ],[ 'a n',      function(e){AudioPlayer.next();          return eat(e); }
       ],[ 'a s',      function(e){AudioPlayer.switchAudio("mute"); return eat(e); }
-      ],[ 'a 0',      function(e){AudioPlayer.switchQuality(0); return eat(e); }
-      ],[ 'a 1',      function(e){AudioPlayer.switchQuality(1); return eat(e); }
-      ],[ 'a 2',      function(e){AudioPlayer.switchQuality(2); return eat(e); }
-      ],[ 'a 3',      function(e){AudioPlayer.switchQuality(3); return eat(e); }
-      ],[ 'a 4',      function(e){AudioPlayer.switchQuality(4); return eat(e); }
+
+      ],[ 'a 0',      function(e){AudioPlayer.volume =   0; return eat(e); }
+      ],[ 'a 1',      function(e){AudioPlayer.volume =  11; return eat(e); }
+      ],[ 'a 2',      function(e){AudioPlayer.volume =  22; return eat(e); }
+      ],[ 'a 3',      function(e){AudioPlayer.volume =  33; return eat(e); }
+      ],[ 'a 4',      function(e){AudioPlayer.volume =  44; return eat(e); }
+      ],[ 'a 5',      function(e){AudioPlayer.volume =  55; return eat(e); }
+      ],[ 'a 6',      function(e){AudioPlayer.volume =  66; return eat(e); }
+      ],[ 'a 7',      function(e){AudioPlayer.volume =  77; return eat(e); }
+      ],[ 'a 8',      function(e){AudioPlayer.volume =  88; return eat(e); }
+      ],[ 'a 9',      function(e){AudioPlayer.volume = 100; return eat(e); }
+
+      ],[ 'a q 0',    function(e){AudioPlayer.switchQuality(0); return eat(e); }
+      ],[ 'a q 1',    function(e){AudioPlayer.switchQuality(1); return eat(e); }
+      ],[ 'a q 2',    function(e){AudioPlayer.switchQuality(2); return eat(e); }
+      ],[ 'a q 3',    function(e){AudioPlayer.switchQuality(3); return eat(e); }
+      ],[ 'a q 4',    function(e){AudioPlayer.switchQuality(4); return eat(e); }
 
       ],[ 'm d',      function(e){Projector.toggleMouse("d");  return eat(e); }
       ],[ 'm a',      function(e){Projector.toggleMouse("a");  return eat(e); }
       ],[ 'm h',      function(e){Projector.toggleMouse("h");  return eat(e); }
       ],[ 'm p',      function(e){Projector.toggleMouse("p");  return eat(e); }
 
+      ],[ 'x g',      function(e){Projector.info("graph");   return eat(e); }
       ],[ 'x f',      function(e){Projector.info("filters");   return eat(e); }
       ],[ 'x c',      function(e){Projector.info("compos");    return eat(e); }
-      ],[ 'x h',      function(e){toggleHiden();               return eat(e); }
+      ],[ 'x h',      function(e){toggleHidden();              return eat(e); }
+      ],[ 'x e',      function(e){toggleEditor();              return eat(e); }
       ]
       ].forEach(function(trap){Mousetrap.bind(trap[0], trap[1]);});
 
@@ -427,7 +475,7 @@ var Projector = (function(){
       cvs.addEventListener('DOMMouseScroll', mouseScroll, false);
       cvs.addEventListener('mousewheel',     mouseScroll, false);
       cvs.addEventListener('dblclick',       eat, false);
-      cvs.addEventListener('mousedown',     function(e){
+      cvs.addEventListener('mousedown',      function(e){
         
         mouse.event = event;
 
@@ -443,8 +491,15 @@ var Projector = (function(){
           mouse.maybeClick = true;
           setTimeout(function(){
             mouse.maybeClick = false;
-            // console.log("onMouseDown: isNotClick");
           }, 200);
+        }
+
+        // hack
+        if(mouse.x > width - 64 && mouse.y < 40){
+          self.toggleAudio();
+        } else {
+          document.getElementById("audioselector").style.display = "none";
+          showAudio = false;
         }
 
       }, false);
@@ -469,6 +524,13 @@ var Projector = (function(){
          }
          mouse.last.x = mouse.x;
          mouse.last.y = mouse.y;
+
+         // hack
+         if(mouse.x > width - 64 && mouse.y < 40){
+           cvs.style.cursor = "pointer";
+         } else {
+           cvs.style.cursor = "auto";
+         }
 
       }, false);
 
@@ -522,55 +584,67 @@ var Projector = (function(){
 
     initShows: function(onloaded){
 
-      var ns, nc, nf, org, tgt, akku = [];
-
-      // param ?????????
+      var nameShow, name, org, tgt;
 
       shows = {};
 
-      for (ns in window.Shows){
+      for (nameShow in window.Shows){
         
-        org = window.Shows[ns];
+        org = window.Shows[nameShow];
         
         tgt = {
-          name:     ns,
+          name:     nameShow,
           version:  org.version,
           config:   org.config,
           colors:   org.colors, 
           fonts:    org.fonts
         };
 
-        for (nf in tgt.fonts){
-          tgt.fonts[nf].name = nf;}
+        for (name in tgt.fonts){
+          tgt.fonts[name].name = name;}
         
-        for (nc in tgt.colors){
-          tgt.colors[nc].name = nc;}
+        for (name in tgt.colors){
+          tgt.colors[name].name = name;}
 
-        try {
-
-          tgt.effects = org.effects(tgt.fonts, tgt.colors); } 
-
-        catch(er1){onloaded({event: er1, device: "show: " + ns, message: "Can't load effects<br />" + er1});}
-  
-        try {
-
-          tgt.compositions = org.compositions(tgt.effects, tgt.fonts, tgt.colors, DPCS);} 
-
-        catch(er2){onloaded({event: er2, device: "show: " + ns, message: "Can't load compositions<br />" + er2});}
+        try { // Color Ranges
+          tgt.ranges = org.ranges(tgt.colors); } 
+        catch(er0){
+          onloaded({event: er0, device: "show: " + nameShow, message: "Can't load color ranges<br />" + er0});
+          return;
+        }
 
 
-        shows[ns] = tgt;
-        akku.push(ns);
+        try { // Effects
+          tgt.effects = org.effects(tgt.fonts, tgt.ranges, tgt.colors); } 
+        catch(er1){
+          onloaded({event: er1, device: "show: " + nameShow, message: "Can't load effects<br />" + er1});
+          return;
+        }
+
+        for (name in tgt.effects){
+          tgt.effects[name]._name = name;}
+
+        try { // Compsitions
+          tgt.compositions = org.compositions(tgt.effects, tgt.fonts, tgt.ranges, tgt.colors, DPCS);} 
+          // check if all have connect, so they are funcions
+        catch(er2){
+          onloaded({event: er2, device: "show: " + nameShow, message: "Can't load compositions<br />" + er2});
+          return;
+        }
+
+        for (name in tgt.compositions){
+          tgt.compositions[name]._name = name;}
+
+        shows[nameShow] = tgt;
 
       }
 
-      TIM.step(" OK Shows", akku.join(", "));
       onloaded();
 
     },
-    loadShow: function(show, onloaded){
+    loadShow: function(show, nameCompo, onloaded){
 
-      var i=0, j, name, compo, filter, tasks, key;
+      var i=0, j, name, compo, filter, tasks, key, foundCompo = false;
 
       show = shows[show] || show;
 
@@ -578,7 +652,7 @@ var Projector = (function(){
         console.error("PR.loadShow: Can't find", show , "i", shows);}
 
       //clear old stuff
-      menu    = ["menu"]; 
+      menu    = []; 
       filters = []; 
       compos  = []; 
 
@@ -587,10 +661,10 @@ var Projector = (function(){
       // show config
       cvs.style.background = show.config.backColor || "black";
       tim.rate    = show.config.fps          || tim.rate || 30;
-      showDebug   = show.config.showDebug    || true;
+      showDebug   = show.config.showDebug    || 0;
       showHelp    = show.config.showHelp     || false;
 
-      AudioPlayer.quality = show.config.AAQ || DB.get("audio").AAQ;
+      AudioPlayer.quality = show.config.AAQ || DB.get("audio").AAQ || 2;
 
       // clear mouse binding from last show
       for (i=0; i<10; i++) {
@@ -609,10 +683,14 @@ var Projector = (function(){
       //   return function(e){curCompo = 10; return eat(e);};
       // })());
 
-      i = 1;
+      i = 0;
 
       // register compos
       for (name in show.compositions){
+
+        if (name === nameCompo) {
+          curCompo = i;
+        }
 
         key = String(i);
 
@@ -632,11 +710,11 @@ var Projector = (function(){
         })());
         
         Mousetrap.bind("ctrl+" + key, (function(){
-          var next = 1;
+          var next = i;
           return function(e){
             var last = curCompo;
             self.addTick(  0, function(){curCompo = next;});
-            self.addTick( -5, function(){curCompo = last;});
+            self.addTick( -1, function(){curCompo = last;});
             return eat(e);
           };
         })());
@@ -666,13 +744,11 @@ var Projector = (function(){
       });
 
       async.series(tasks, function(err, res){ 
-        if(err){self.onerror(err);} else {
+        if(err){
+          console.log(err);
+          Loader.onerror(err);} else {
           self.initGraph();
           hasShowLoaded = true;
-          TIM.step(" OK Show." + show.name, 
-            filters.length + " filters, " + 
-            compos.length  + " compos"
-          );
           onloaded();
         }
       });
@@ -687,6 +763,29 @@ var Projector = (function(){
       for (i in compos) {
 
         compo = compos[i];
+
+        compo.log = (function (){
+          var cmp = compo;
+          return function (){
+            message.command = "collect";
+            message.filters = [];
+            cmp.graph.forEach(function(item){
+              message.parent = self;
+              item(message);
+            });
+            console.log("\nGRAPH - Show:", curShow.name, "Compo: " + compo.name, compo.comment);
+            message.filters.forEach(function(efx){
+
+              console.log(efx.parent.name + "/" + efx.name, 
+                "\n" + H.roundA(efx.lastRect, 2),
+                "\n" + H.roundA(efx.lastTrans, 2),
+                "\n" + JSON.stringify(efx.lastOps),
+                (efx.lastInfo) ? "\n" + H.roundA(efx.lastInfo, 2) : ""
+              );
+
+            });
+          };
+        })(); 
         
         compo.filters = (function(){
           message.command = "collect";
@@ -694,17 +793,18 @@ var Projector = (function(){
           compo.graph.forEach(function(child){
             child(message);
           });
-          return message.filters.slice(0);
+          // return message.filters.slice(0);
+          return message.filters;
         })();    
 
-        compo.tick = (function(){
+        compo.tick = (function (){
           var tickers = [];
           compo.filters.forEach(function(filter){
             if (typeof filter.tick === "function"){
               tickers.push(filter);
             }
           });
-          return function(){
+          return function (){
             tickers.forEach(function(filter){
               filter.tick();
             });
@@ -712,9 +812,9 @@ var Projector = (function(){
         })();
 
 
-        compo.link = (function(){
+        compo.link = (function (){
           var cmp = compo;
-          return function(parent){
+          return function (parent){
             message.command = "link";
             cmp.graph.forEach(function(item){
               message.parent = parent;
@@ -723,16 +823,22 @@ var Projector = (function(){
           };
         })(); 
 
-        compo.render = (function(){
+        compo.render = (function (){
           var cmp = compo;
-          return function(ctx){
+          return function (ctx){
             var item, t0 = window.performance.now();
             message.command = "render";
+            message.filters = [];
             message.frame = tim.rends;
             for (item in cmp.graph){
+              message.parent = self;
               message.ctx = ctx;
               cmp.graph[item](message);
             }
+            message.filters.forEach(function (f){
+              f.afterRender();
+            }); 
+
             cmp.lastDuration = window.performance.now() - t0;
           };
         })();
@@ -742,7 +848,7 @@ var Projector = (function(){
         compo.render(test.ctx);
         compo.link(self);
 
-        console.log(compo.name, Math.round(compo.lastDuration), "ms");
+        console.log(" OK " + compo.name, Math.round(compo.lastDuration), "ms");
 
       }
     },
@@ -761,14 +867,14 @@ var Projector = (function(){
       tim.anims += 1;
 
       if(doMaxFrames && tim.rends === doMaxFrames){
-        TIM.step("Stopped", tim.rends);
+        TIM.step("Stop! " + tim.rends + " frames");
         return;}
 
       if (doAnimate) {
         window.requestAnimationFrame(self.animate);}
 
       // IFC
-      Hotspots.execute(mouse);
+      // Hotspots.execute(mouse); 
       if(!mouse.down && mouse.maybeClick){
         mouse.maybeClick = false;}
 
@@ -779,7 +885,7 @@ var Projector = (function(){
         tim.tsRend = ts0;
 
         self.tick();
-        DPCS.tick(tim.rends, tim.rate, mouse.x/width, mouse.x/height);
+        DPCS.tick(tim.rends, mouse.x/width, mouse.y/height);
         AudioPlayer.tick();
         AudioPlayer.tickBeat();
         compos.forEach(function(cmp){cmp.tick();});
@@ -789,9 +895,9 @@ var Projector = (function(){
           ctx.clearRect(0, 0, width, height);}
 
         if (doRender) {
-          compos[curCompo].render(ctx);
-          compos[curCompo].filters.forEach(function(f){
-            f.afterRender();});} 
+          compos[curCompo].render(ctx);}
+          // compos[curCompo].filters.forEach(function animateAfterRender(f){
+          //   f.afterRender();});} 
 
         if (showDebug || showHelp || showSpots || showDPCS) {
 
@@ -811,6 +917,7 @@ var Projector = (function(){
 
           // TODO: Tween me
           ctx.globalAlpha = 1;
+          ctx.setTransform(1, 0, 0, 1, 0, 0);
           ctx.globalCompositeOperation = "source-over";
           ctx.drawImage(overlay.cvs, 0, 0, width, height);
 
@@ -818,7 +925,7 @@ var Projector = (function(){
 
         tim.msRend = window.performance.now() - ts0;
         tim.bfRend.push(tim.msRend);
-        tim.rends += 1;
+        tim.rends += 1; // move to top 
 
       }
 

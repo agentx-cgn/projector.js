@@ -28,17 +28,18 @@ var DB = (function () {
       source:   "mute",
       volume:     80,
       sine:      440,
-      AAQ:       2,
+      AAQ:         2,
       stream:   "http://85.21.79.93:9045/;",
-      streams:   [],
-      playlist:  playlist,
-      playlists: ["T2200W.music", "T2200W.techno"],
+      radios:   {
+        "http://38.104.130.91:8800/;" : "somaFM (128)",
+        "http://85.21.79.93:8040/;"   : "deepmix.eu (128)",
+        "http://91.121.13.103:8080/;" : "lounge.radio.com (128)",
+        "http://88.190.234.231:80/;"  : "French Kiss FM (128)"
+      },
     },
-    effects: ["basic", "text", "time", "audio"],
-    // show:    "demo",
-    show:    "test",
-    // shows:   ["demo", "test"],
-    shows:   ["test"],
+    effects: ["basic", "text", "time", "audio", "specials", "pixastic"],
+    show:    "demo",
+    shows:   ["demo"],
   };
 
   function save(msg) {

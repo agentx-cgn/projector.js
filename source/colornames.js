@@ -1,3 +1,10 @@
+
+
+// http://www.w3.org/TR/css3-color/#svg-color
+
+// Use names only to try out things
+
+
 var ColorNames = {
 
     "aliceblue":"#f0f8ff",

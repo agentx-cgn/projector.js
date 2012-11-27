@@ -68,14 +68,14 @@ Sequences group keyboard actions and help to remember them. Just press given key
 
 ### compositions
 *	 backspace: quick blend to background color of current show      
-*        0: overview of compositions in active show
-*      1-9: switches immediately to a composition
-* ctrl+1-9: switches temporarily to a composition (a short blend in)
+*         0: overview of compositions in active show
+*       1-9: switches immediately to a composition
+*  ctrl+1-9: switches temporarily to a composition (a short blend in)
 
-### shows
+### shows (planned)
 * s s: overview of available shows (planned)
 
-### mouse input
+### mouse input (planned)
 * m d: mouse disconnect (parameter freeze)
 * m a: mouse connect
 * m h: toggles system mouse pointer
@@ -83,14 +83,13 @@ Sequences group keyboard actions and help to remember them. Just press given key
 
 ### audio
 * a a: toggles the audio source dialog
-* a right arrow: steps to next random track, if in playlist mode.
-* a m: toggles mute / play
+* a n: steps to next random track, if in playlist mode.
 * a 0:   0% Volume (no dynamic audio controls)
 * a 1:  11% Volume
 * a 2-8:  22-88% Volume
 * a 9: 100% Volume (full dynamic audio controls) 
 
-## editing
+## editing (planned)
 * e e: toggles editor window
 * e c: load editor with current composition
 * e s: saves current show in repository
@@ -102,10 +101,10 @@ Sequences group keyboard actions and help to remember them. Just press given key
 ## Tips & Tricks
 
 ### Mp3 Playlists
-Due to security reasons the browser will not tell any web application anything about your file system. To circumvent this restriction you can create a simple list of mp3 files you like to import and drop this list onto the AudioSelector.
+Due to security reasons the browser will not tell any web application anything about your file system. To circumvent this restriction you can create a simple list of mp3 files you like to import and drop this list onto the AudioSelector. The list should contain the complete paths ending with a line break.
 
 ## Encoding Videos
-It depends on your footage which quality will run on the wall. As a rule of thumb the faster the video content changes the lower the resolution might be. Think twice before encoding hectic flicker techno style Video at full HD. Generally base profiles are less demanding. It is a good idea to just drop the video file into your browser and watch CPU consumption. Also the distance between I-frames impacts seeking, which gives you all freedom if a video runs as loop only.
+It depends on your footage which quality will run on the wall. As a rule of thumb the faster the video content changes the lower the resolution might be. Think twice before encoding hectic flicker techno style Video at full HD. Generally base profiles are less demanding. It is a good idea to just drop the video file into your browser and watch CPU consumption. Also the distance between I-frames impacts seeking, which gives you all freedom if a video runs as loop only
 
 ## In Development
 * better playlists

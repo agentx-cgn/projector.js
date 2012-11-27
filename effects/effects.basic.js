@@ -1,5 +1,5 @@
 /*jslint browser: true, devel: true, debug: true, nomen: true, plusplus: true, sloppy: true, vars: true, white: true, indent: 2 */
-/*globals EFX, Filter, Pixastic */
+/*globals EFX, Filter, Pixastic, Colors */
 
 
 EFX.Basic = {};
@@ -7,66 +7,85 @@ EFX.Basic = {};
 
 //--------------  E X A M P L E  ----------------------------------------------
 //  
-//  does nothing, except to offer grouping effects. Uses GPU, though.
+//  white circle, 
 //  
 //  author, noiv, 2012, Cologne
 
-// this is JS boilerplate
-EFX.Basic.Example = function (cfg){Filter.apply(this, [cfg]);};
-EFX.Basic.Example.prototype = new Filter();
-EFX.Basic.Example.constructor = EFX.Basic.Example;
-EFX.Basic.Example.prototype.load = function(onloaded){
+// this is effect boilerplate
+EFX.Basic.Circle = function (cfg){Filter.apply(this, [cfg]);};
+EFX.Basic.Circle.prototype = new Filter();
+EFX.Basic.Circle.constructor = EFX.Basic.Circle;
+EFX.Basic.Circle.prototype.load = function(onloaded){
 
 /* 
 
 Each effects has at least one canvas. drawImage() calls are cheap
 but painting, path and text not. Make sure within load() everything is 
 prepared for fast rendering, you have only a few millicesonds for a 
-composition and each effects is called for one frame. Once the canvas is
-prepared call onloaded().
+composition and each effects is called for one frame. 
+
+Once the canvas is prepared call onloaded().
 
   this.source - that's the canvas
   this.ctx    - that's its context
 
 */ 
 
-  // sets the size of the canvas "123" = pixel, 0.5 = relative to parent
-  // this might be set with the effect definitions. Without this dimensions
-  // resizing the browser will fail.
+  var ctx = this.ctx;
 
-  this.width  = this.width  || 1;
-  this.height = this.height || 1;
+// far now, this filer does not expect childs, end of graph
+
+  this.clear = this.clear || false;
+
+// sets the size of the canvas "123" = pixel, 0.5 = relative to parent
+// this might be set with the effect definitions. Without this dimensions
+// resizing the browser will fail.
+
+  this.width  = String(this.width  || 512);
+  this.height = String(this.height || 512);
+  this.source.width  = Number(this.width);
+  this.source.height = Number(this.height);
+
+// the color of 
+  // this.color = Colors.read(this.color || "rgba(255, 255, 255, 0.98)");
 
 // you might add some more variable here. Do not overwrite standards 
 // without purpose.
 
-  this.color = "red";
+  // this.ops.w = 1;
+  this.ops.p = "ash"; // this keeps ratio, h is master
+  this.ops.h = 1;
+  this.ops.w = 1; 
+  this.ops.width = 7;
 
-// this.ops defines how dynamic your effect is.
-// standards are :
+// no more aditional dynamic parameters above, if you want dynamic colors, 
+// put a Basic.Color behind in the chain, with o: "sat, sov, etc." and a color
 
-  this.ops = {
-    a: 1,       // how translucent is your effect (0 = invisible, 1 = opaque)
-    c: "",      // rgba tint color, used over full canvas, "" = ignore 
-    o: "sov",   // the byte operation used to combine with parent
-    r: 0,       // rotation in degrees, clockwise (0 - 360)
-    p: "rel",   // position, defines where you canvas will be combined
-    l: 0.5,     // with parent
-    t: 0.5, 
-    w: 1, 
-    h: 1 
-  };
-  
-// Done wit loading
+// https://developer.mozilla.org/samples/canvas-tutorial/2_4_canvas_arc.html
+
+  ctx.strokeStyle = "white"; //this.color;
+  ctx.lineWidth = this.ops.width;
+  ctx.beginPath();
+  ctx.arc(this.source.width/2, this.source.height/2, 192, 0, Math.PI *2, false);
+  ctx.closePath();
+  ctx.stroke();
+
+// Done with loading
   onloaded();
 
 };
-
-// optional, 
-EFX.Basic.Null.prototype.resize = function(){
-  this.resizeToParent([this.source]);
+EFX.Basic.Circle.prototype.beforeDraw = function(ops){
+  var ctx = this.ctx;
+  if (this.clear) {
+    ctx.strokeStyle = this.color;
+    ctx.lineWidth = ops.width;
+    ctx.beginPath();
+    ctx.arc(this.source.width/2, this.source.height/2, 96, 0, Math.PI *2, false);
+    ctx.closePath();
+    ctx.stroke();
+  }
 };
-
+EFX.Basic.Circle.prototype.resize = new Function(); // not needed
 
 
 //--------------  N U L L -----------------------------------------------------
@@ -79,14 +98,20 @@ EFX.Basic.Null = function (cfg){Filter.apply(this, [cfg]);};
 EFX.Basic.Null.prototype = new Filter();
 EFX.Basic.Null.constructor = EFX.Basic.Null;
 EFX.Basic.Null.prototype.load = function(onloaded){
+  this.clear = true; // made for childs
   this.width  = this.width  || 1;
   this.height = this.height || 1;
   this.ops.a = 1;
+  this.ops.w = 1;
+  this.ops.h = 1;
   onloaded();
 };
-// EFX.Basic.Null.prototype.resize = function(){
-//   this.resizeToParent([this.source]);
-// };
+EFX.Basic.Null.prototype.beforeRender = function(ops){
+  if (this.clear) {
+    this.ctx.setTransform(1, 0, 0, 1, 0, 0);
+    this.ctx.clearRect(0, 0, this.source.width, this.source.height);
+  }
+};
 
 
 
@@ -126,6 +151,7 @@ EFX.Basic.Mouse.prototype.load = function(onloaded){
   };
   this.image.src = this.src;
 };
+// make this beforeXXXX
 EFX.Basic.Mouse.prototype.tick = function(){
   // called to update position
   this.ops.l = this.projector.mouse.x / this.projector.width;
@@ -134,23 +160,38 @@ EFX.Basic.Mouse.prototype.tick = function(){
 
 
 
-//--------------  R E C T A N G L E  ------------------------------------------
+//--------------  C O L O R  --------------------------------------------------
 //  
-//  easy shape, likes dynamics
-//  prefers to be tiny
+//  all kind of color with composite operation
+//  works also as rectangle
 
-EFX.Basic.Rectangle = function (cfg){Filter.apply(this, [cfg]);};
-EFX.Basic.Rectangle.prototype = new Filter();
-EFX.Basic.Rectangle.constructor = EFX.Basic.Rectangle;
-EFX.Basic.Rectangle.prototype.load = function(onready){
+EFX.Basic.Color = function (cfg){Filter.apply(this, [cfg]);};
+EFX.Basic.Color.prototype = new Filter();
+EFX.Basic.Color.constructor = EFX.Basic.Color;
+EFX.Basic.Color.prototype.load = function(onready){
+  this.clear = this.clear || true;
+  this.ops.color = this.color || "rgba(255, 0, 0, 0.5)"; // fill color
+  this.ops.w = 1;
+  this.ops.h = 1;
   this.width  = this.width  || "16";
   this.height = this.height || "16";
+  this.source.width  = this.width;
+  this.source.height = this.height;
+  this.ctx.globalCompositeOperation = "source-over";
+  this.applyFillStyle(this.ops.color);
+  // this.ctx.fillStyle = Color(this.ops.color);
+  this.ctx.fillRect(0, 0, this.source.width, this.source.height);
   onready();
 };
-EFX.Basic.Rectangle.prototype.beforeDraw = function(){
-  var ctx = this.ctx;
-  ctx.clearRect(0, 0, this.width, this.height);
+EFX.Basic.Color.prototype.beforeDraw = function(ops){
+  if (this.clear) {
+    this.ctx.setTransform(1, 0, 0, 1, 0, 0);
+    this.ctx.clearRect(0, 0, this.source.width, this.source.height);
+    this.ctx.fillStyle = ops.color;
+    this.ctx.fillRect(0, 0, this.source.width, this.source.height);
+  }
 };
+EFX.Basic.Color.prototype.resize = new Function(); // not needed
 
 
 
@@ -179,12 +220,13 @@ EFX.Basic.Video.prototype.load = function(onloaded){
   this.source.loop = true;
   this.source.volume = 0;
 
+  this.ops.speed = 1;
+
   this.source.addEventListener("playing",  function ()  {
     var s = self.source;
     s.width  = s.videoWidth;
     s.height = s.videoHeight;
     s.playbackRate = self.playbackRate || 1;
-    // console.log("V: " + self.src, "D: " + s.duration, "T: " + s.currentTime, "R: " + s.readyState );
     onloaded();
   },  false);
 
@@ -197,7 +239,10 @@ EFX.Basic.Video.prototype.load = function(onloaded){
 
 };
 EFX.Basic.Video.prototype.resize = new Function();
-EFX.Basic.Video.prototype.afterDraw = function(){
+EFX.Basic.Video.prototype.beforeDraw = function(ops){
+  this.source.playbackRate = H.clamp(ops.speed, 0, 3);
+};
+EFX.Basic.Video.prototype.afterRender = function(){
   if (this.random && !this.source.seeking){
     this.source.currentTime = Math.random() * this.source.duration;
   }
@@ -218,7 +263,7 @@ EFX.Basic.Bitmap.prototype.load = function(onready){
 
   var self = this;
 
-  this.clear = false;
+  // this.clear = false;
   this.image = new Image();
   
   this.image.onload  = function ()  {
@@ -237,11 +282,11 @@ EFX.Basic.Bitmap.prototype.load = function(onready){
   this.image.src = this.src;
 
 };
-EFX.Basic.Bitmap.prototype.afterDraw = function(){
-  if (this.clear) {
-    this.ctx.drawImage(self.image, 0, 0, self.source.width, self.source.height);
-  }
-};
+// EFX.Basic.Bitmap.prototype.afterDraw = function(){
+//   if (this.clear) {
+//     this.ctx.drawImage(this.image, 0, 0, this.source.width, this.source.height);
+//   }
+// };
 
 
 
@@ -258,7 +303,7 @@ EFX.Basic.Pattern.prototype.load = function(onready){
 
   var self = this;
 
-  this.clear = false;
+  // this.clear = false;
   this.width  = this.width  || "512";
   this.height = this.height || "512";
   this.image = new Image();
@@ -287,11 +332,11 @@ EFX.Basic.Pattern.prototype.load = function(onready){
   this.image.src = this.src;
 
 };
-EFX.Basic.Pattern.prototype.afterDraw = function(){
-  if (this.clear) {
-    this.ctx.drawImage(self.image, 0, 0, self.source.width, self.source.height);
-  }
-};
+// EFX.Basic.Pattern.prototype.afterDraw = function(){
+//   if (this.clear) {
+//     this.ctx.drawImage(this.image, 0, 0, this.source.width, this.source.height);
+//   }
+// };
 
 
 
@@ -305,34 +350,70 @@ EFX.Basic.Pattern.prototype.afterDraw = function(){
 EFX.Basic.Camera = function (cfg){Filter.apply(this, [cfg]);};
 EFX.Basic.Camera.prototype = new Filter();
 EFX.Basic.Camera.constructor = EFX.Basic.Camera;
+EFX.Basic.Camera.prototype.resize = new Function();
 EFX.Basic.Camera.prototype.load = function(onloaded){
 
-  var self = this;
+  var self = this, hidden = document.getElementById("hidden");
   
-  this.source = document.createElement("video");
-  
+  // fallBack("fallback");
+  // return;
+
+  this.mirror = this.mirror || false;
+  this.ops.m = this.mirror;
+
+  function fallBack(e){
+    ctx = self.ctx;
+    self.width = "128";
+    self.height = "96";
+    self.source.width = 128;
+    self.source.height = 96;
+
+    ctx.fillStyle = "black";
+    ctx.fillRect(0, 0, self.source.width, self.source.height);
+    
+    ctx.font = "24px sans-serif";
+    ctx.fillStyle = "white";
+    ctx.textAlign = "center";
+    ctx.textBaseline = "middle";
+    ctx.fillText("No Cam", self.source.width/2, self.source.height/2);
+
+    if(self.dom){hidden.appendChild(self.source);}
+    TIM.step("NOK Camera", e.toString());
+    onloaded();
+
+  }
+
+
   navigator.getUserMedia({video: true, toString : function() {return "video";}}, 
+
     function(stream) { 
+      self.source = document.createElement("video");
       self.device = stream.videoTracks[0].label;
       self.source.autoplay = true;
       self.source.addEventListener('playing', function(){
-        self.width  = String(self.source.videoWidth);
-        self.height = String(self.source.videoHeight);
-        self.source.width  = self.source.videoWidth;
-        self.source.height = self.source.videoHeight;
-        console.log(self.device, "@", self.source.width + "x" + self.source.height);
+        self.width  = String(self.source.videoWidth/2);
+        self.height = String(self.source.videoHeight/2);
+        self.source.width  = Number(self.width);
+        self.source.height = Number(self.height);
+        TIM.step(" OK Camera", 
+          self.device + "@" + 
+          self.source.videoWidth + "x" + self.source.videoHeight + " > " + 
+          self.source.width + "x" + self.source.height
+          );
         onloaded();
       }, false);
       self.source.src = window.webkitURL 
         ? window.webkitURL.createObjectURL(stream) 
         : stream;
       self.source.play();
+      if(self.dom){hidden.appendChild(self.source);}
 
     },
+
     function(e){
-      console.log("Cam.getUserMedia: ", e);
-      onloaded({event:e, filter: self.name, message:"Could not access camera"});
+      fallBack(e);
     }
+
   );
 
 };

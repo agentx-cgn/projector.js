@@ -14,42 +14,53 @@ EFX.Time = {};
 EFX.Time.Delay = function (cfg){Filter.apply(this, [cfg]);};
 EFX.Time.Delay.prototype = new Filter();
 EFX.Time.Delay.constructor = EFX.Time.Delay;
+EFX.Time.Delay.prototype.resize = new Function(); 
 EFX.Time.Delay.prototype.load = function(onloaded){
 
-  var i, cvs, ctx;
+  var i, cvs, ctx, hidden = document.getElementById("hidden");
 
-  this.width = this.width  || 256;
-  this.width = this.height || 256;
+  this.width  = this.width  || "320";
+  this.height = this.height || "240";
 
   this.interval = this.interval || 1;
-
-  this.ops.off = 0;
+  this.delay    = this.delay * this.projector.fps || this.projector.fps;
+  this.ops.off  = this.off      || 0;
 
   this.buffer = []; 
   this.pointer = 0;
   this.lastPointer = 0;
 
-  for (i=0; i<this.size; i++) {
+  if(this.dom){hidden.removeChild(this.source);}
+
+  for (i=0; i<this.delay; i++) {
     cvs = document.createElement("canvas");
     cvs.style.background = "transparent";
-    cvs.width = this.width;
-    cvs.height = this.height;
+    cvs.width = Number(this.width);
+    cvs.height = Number(this.height);
+    cvs.title = this.name + ":" + i;
     ctx = cvs.getContext('2d');
-    ctx.fillStyle = "orange";
-    ctx.fillText("frame: " + i, 3, 10);
+    ctx.font = "24px sans-serif";
+    ctx.fillStyle = "white";
+    ctx.textAlign = "center";
+    ctx.textBaseline = "middle";
+    ctx.fillText("Overriding Arrow of Time ...", cvs.width/2, cvs.height/2 -16);
+    ctx.fillText(~~(i/this.delay*100) + "%", cvs.width/2, cvs.height/2 +16);
     ctx.name = this.name + "-" + i;
     this.buffer[i] = cvs;
+    if(this.dom){hidden.appendChild(cvs);}
   }
 
   this.source = this.buffer[this.pointer];
   this.ctx = this.buffer[this.lastPointer].getContext("2d");
+  TIM.step(" OK Delay", this.delay * ~~this.width * ~~this.height * 32 / 1024 / 1024 + " MB");
   onloaded();
 
 };
+
 // makes this work on beforeDraw respecting ops.off
 EFX.Time.Delay.prototype.afterDraw = function(){
   this.lastPointer = this.pointer;
-  this.pointer = (this.size + this.pointer +1) % this.size;
+  this.pointer = (this.delay + this.pointer +1) % this.delay;
   this.source = this.buffer[this.pointer];
   this.ctx = this.buffer[this.lastPointer].getContext("2d");
 };
@@ -67,33 +78,23 @@ EFX.Time.Blend.Color = function (cfg){Filter.apply(this, [cfg]);};
 EFX.Time.Blend.Color.prototype = new Filter();
 EFX.Time.Blend.Color.constructor = EFX.Time.Blend.Color;
 EFX.Time.Blend.Color.prototype.load = function(onloaded){
-  this.width = this.width || 1;
+
+  this.width  = this.width  || 1;
   this.height = this.height || 1;
+  
   this.ops = {
     a: 1, o: "sov", 
     p: "cnt", l: 0.5, t: 0.5, w: 1, h: 1,
     r: 0, 
-    c: "rgba(0, 0, 0, 0.1)", 
     // custom
-    dx: 0, dy: 0, sx: 1, sy: 1, bc: ""
+    dx: 0, dy: 0, sx: 1, sy: 1
   };
+  this.lastOps = "huhu";
   onloaded();
-};
-EFX.Time.Blend.Color.prototype.resize = function(){
-
-  if (typeof this.width === "string"){
-    this.source.width  = this.width;
-  } else {
-    this.source.width  = this.parent.source.width  * this.width;
-  }
-  if (typeof this.height === "string"){
-    this.source.height  = this.height;
-  } else {
-    this.source.height  = this.parent.source.height  * this.height;
-  }
 
 };
-EFX.Time.Blend.Color.prototype.afterRender = function(){
+// make this before Render
+EFX.Time.Blend.Color.prototype.afterRender = function(ops){
 
   // DO NOT TOUCH THIS
 
@@ -101,8 +102,8 @@ EFX.Time.Blend.Color.prototype.afterRender = function(){
       ops = this.lastOps,
       pw  = this.parent.source.width,
       ph  = this.parent.source.height,
-      cx  = this.lastOps.l * pw,
-      cy  = this.lastOps.t * ph,
+      cx  = ops.l * pw,
+      cy  = ops.t * ph,
 
       sw  = this.source.width,
       sh  = this.source.height,
@@ -145,7 +146,10 @@ EFX.Time.Blend.Alpha.prototype = new Filter();
 EFX.Time.Blend.Alpha.constructor = EFX.Time.Blend.Alpha;
 EFX.Time.Blend.Alpha.prototype.load = function(onloaded){
 
-  var hidden;
+  var hidden = document.getElementById("hidden");
+
+  this.width  = this.width  || 1;
+  this.height = this.height || 1;
 
   this.ops = {
     a: 1, o: "sov", 
@@ -153,7 +157,7 @@ EFX.Time.Blend.Alpha.prototype.load = function(onloaded){
     r: 0, 
     c: "", 
     // custom
-    dx: 0, dy: 0, sx: 1, sy: 1, bc: ""
+    dx: 0, dy: 0, sx: 1, sy: 1, ba: 1
   };
   this.cvs0 = document.createElement("canvas");
   this.ctx0 = this.cvs0.getContext('2d');
@@ -174,7 +178,6 @@ EFX.Time.Blend.Alpha.prototype.load = function(onloaded){
   this.ctx2._name = this.name + "." + "2";
 
   if(this.dom){
-    hidden = document.getElementById("hidden");
     hidden.removeChild(this.source);
     hidden.appendChild(this.cvs0);
     hidden.appendChild(this.cvs1);
@@ -190,16 +193,18 @@ EFX.Time.Blend.Alpha.prototype.load = function(onloaded){
 EFX.Time.Blend.Alpha.prototype.resize = function(){
   this.resizeToParent([this.source, this.cvs0, this.cvs1, this.cvs2]);
 };
-EFX.Time.Blend.Alpha.prototype.beforeDraw = function(){
+EFX.Time.Blend.Alpha.prototype.beforeDraw = function(ops){
 
   // DO NOT TOUCH THIS
 
   var ctx,
-      ops = this.lastOps,
+      // ops = this.lastOps,
       pw  = this.parent.source.width,
       ph  = this.parent.source.height,
-      cx  = this.lastOps.l * pw,
-      cy  = this.lastOps.t * ph,
+      // cx  = this.lastOps.l * pw,
+      // cy  = this.lastOps.t * ph,
+      cx  = ops.l * pw,
+      cy  = ops.t * ph,
 
       sw  = this.source.width,
       sh  = this.source.height,
@@ -224,7 +229,8 @@ EFX.Time.Blend.Alpha.prototype.beforeDraw = function(){
   // stuff from past
   ctx.setTransform(1, 0, 0, 1, 0, 0);
   ctx.clearRect(0, 0, sw, sh);
-  ctx.globalAlpha = 0.92;       // make this ops    
+  // ctx.globalAlpha = 0.92;       // make this ops    
+  ctx.globalAlpha = ops.ba;       // make this ops    
   ctx.globalCompositeOperation = "copy";  //  "source-over";  
   ctx.translate(sw/2, sh/2);
 
@@ -247,9 +253,11 @@ EFX.Time.Blend.Alpha.prototype.beforeDraw = function(){
   this.lastInfo = [sl, st, sw, sh, tl, tt, tw, th];
 
 };
-EFX.Time.Blend.Alpha.prototype.afterRender = function(){
+EFX.Time.Blend.Alpha.prototype.beforeRender = function(){
   this.source = this.cvs0;
-  this.ctx = this.source.getContext("2d");
-  this.ctx.clearRect(0, 0, this.source.width, this.source.height);
+  var ctx = this.source.getContext("2d");
+  this.ctx = ctx;
+  ctx.setTransform(1, 0, 0, 1, 0, 0);
+  ctx.clearRect(0, 0, this.source.width, this.source.height);
 };
 

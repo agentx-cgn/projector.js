@@ -17,7 +17,17 @@ media/audio/
 !media/audio/makeplaylist.txt
 !shows/show.demo.js
 
+index.md
 README.copy.md
 readme.txt
-UNLICENSE
+
+T1667.music
+T1667.techno
+T2200.music
+T2200W.music
+T2200W.techno
+
+playlist.txt
+
+.gitignore
 

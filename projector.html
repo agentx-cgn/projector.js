@@ -10,12 +10,22 @@
         console = { log:function(){}, warn:function(){}, error:function(){} };
       }
 
-      window.performance.now = window.performance.now ||
-        window.performance.webkitNow;
+      window.performance = window.performance || {};
+      window.performance.timing = window.performance.timing ||{};
+
+      window.performance.now = 
+        window.performance.now ||
+        window.performance.webkitNow || 
+        (function(){var t = Date.now(); return function(){return Date.now() - t;};})();
+
+      window.performance.timing.navigationStart = 
+        window.performance.timing.navigationStart || Date.now();
+
+      window.local = !window.location.host;
 
       var TIM = (function(){
         
-        var t0   = performance.timing.navigationStart || Date.now() || +new Date(), 
+        var t0   = window.performance.timing.navigationStart, // || Date.now()||+new Date(), 
             fill = new Array(18).join(" "), 
             pad  = function(s){return (s+fill).substr(0, fill.length)},
             now  = function( ){return parseInt(window.performance.now()*10, 10)/10000;}
@@ -29,7 +39,10 @@
         
       })();
 
-      TIM.step(window.location.host || "Local", document.location.href);
+      TIM.step(window.location.host || "Local", 
+        (navigator.online ? "online" : "offline") + 
+        " - " + document.location.href
+      );
 
     </script>
 
@@ -40,77 +53,129 @@
   </head>
   <body>
     
-    <div id="hidden" style="display:none">
-    <canvas id="test" width="256" height="256"></canvas>
+    <div id="editor" style="display:none">
+      <div id="header"><h1>projector.js</h1></div>
+      <div id="container">
+        <div id="left"></div>
+        <div id="middle">
+          <div id="colors">
+            <h3 class="middle">color ranges</h3>
+            <input  id="txtRange"  value="012345AA, 876543AA" type="text"  class="middle"></input>
+            <canvas id="cvsRange" title="range" width="512" height="20" class="middle"></canvas>
+            <img    id="imgRange" title="range" width="512" height="20" class="middle" />
+          </div>
+        </div>
+        <div id="right"></div>
+      </div>
+      <div id="footer"></div>
+    </div>
 
+
+    <div id="hiddenimages" style="display:none">
+      <img id="icon-audio-nodata"  src="media/icon-audio-nodata.png" />
+      <img id="icon-audio-silence" src="media/icon-audio-silence.png" />
+      <img id="icon-audio-error"   src="media/icon-audio-error.png" />
+    </div>
+
+    <div id="hidden" style="display:none">
+      <canvas id="test"  title="test"  width="256" height="256"></canvas>
     </div>
 
     <div id="error" style="display:none">
       <span id="errorMessage">msg</span><br />
       <span id="errorDetail">detail</span><br /><br />
-      <span id="errorHelp">[either you press F5 to reload <br />or you start debugging now.]</span>
+      <span id="errorHelp">Help</span>
     </div>
 
     <canvas id="projector"></canvas>
 
     <div id="audioselector" style="display:none">
       <div class="background"></div>
+      <!-- <button id="ap_hide" type="submit">Hide</button> -->
       <div class="container">
-        <h3>Select an Audio Source</h3>
-        <ul>
-          <li>
-            <input  id="ap_mute"  name="source" value="false" type="radio"><div class="optText">Mute</div></input>
-            <label for="ap_mute">(pure silence)</label>
-          </li>
-          <li>
-            <input  id="ap_sine"  name="source" value="false" type="radio"><div class="optText">440HZ</div></input>
-            <label for="ap_sine">(concert A)</label>
-          </li>
-          <li>
-            <input  id="ap_micro" name="source"  value="false" type="radio"><div class="optText">Microphone</div></input>
-            <label for="ap_micro">(go live)</label>
-          </li>
-          <li>
-            <input  id="ap_radio"  name="source" value="false" type="radio"><div class="optText">Radio</div></input>
-            <input  id="ap_url"   value="" type="text" size:"30"></input>
-            <label for="ap_radio">(enter stream URL)</label>
-          </li>
-          <li>
-            <input  id="ap_playlist"   name="source" value="false" type="radio"><div class="optText">Playlist</div></input>
-            <label for="ap_playlist">(drop playlist here)</label>
-          </li>
-          <li>
-            <input  id="ap_remember" value="false" type="checkbox">remember choice</input>
-            <label for="ap_remember">(press 'm m' to change)</label>
-          </li>
-          <li>or</li>
-          <li>
-            <!-- <input  id="ap_files"  name="source" value="false" type="radio"><div class="optText">Files</div></input> -->
-            <input style="display:none"  type="file" id="ap_selectFolders" webkitdirectory multiple />
-            <input style="display:none"  type="file" id="ap_selectFiles" multiple />
-            Select mp3
-            <a id="ap_choosefiles" href="#">files</a> or 
-            <a id="ap_choosefolders" href="#">folders</a>; 
-            <span id="txtSelected">0 files loaded</span>
-          </li>
-          <li>
-            <div class="optText" id="lblVolume">Volume</div>
-            <input  id="ap_volume" type="range" min="0" max="100" value="50" step="1" ></input>
-            <label id="txtVolume" for="ap_volume">50%</label>
-            <button id="ap_hide" type="submit">Hide</button>
-          </li>
-          <li>
-            <span id="ap_msg"></span>
-          </li>
-        </ul>
+        <div class="intro">
+          <p><span id="pjs"><a href="http://noiv.github.com/projector.js/">projector.js</a></span> or PJS generates graphics from music by turning spectrum, rhythm and volume into colors, shapes and motion. 
+          </p>
+          
+          <p>The library is Open Source and everybody with basic JavaScript knowledge is invited to share his/her effects. 
+          </p>
+
+          <p>The <a href="https://github.com/noiv/projector.js/blob/master/README.md">readme</a> explains how to mix your mp3 collection with PJS. For now choose one of the following Internet radio stations and play with the number keys (0-9) and a groovy mouse.
+          </p>
+
+          <ul>
+            <li>
+              <input  id="ap_mute"  name="source" value="false" type="radio"></input>
+              <label for="ap_mute">Mute <span class="lblcomment">(pure silence)</span></label>
+            </li>
+            <li>
+              <input  id="ap_sine"  name="source" value="false" type="radio"></input>
+              <label for="ap_sine">440hz <span class="lblcomment">(Concert A)</span></label>
+            </li>
+
+            <!-- 
+              <li>
+                <input  id="ap_micro" name="source"  value="false" type="radio"><div class="optText">Microphone</div></input>
+                <label for="ap_micro">Microphone<span class="lblcomment">(go live)</span></label>
+              </li>
+            -->        
+            <div id="localplaylists" style="display:none"> 
+              <li>
+                <input  id="ap_playlist"   name="source" value="false" type="radio"></input>
+                <label for="ap_playlist">Playlist <span id="spnPlaylist" class="lblcomment">(/playlist.txt)</span></label>
+              </li>
+            </div>
+            
+            <li>
+              <input  id="ap_stream"  name="source" value="false" type="radio"></input>
+              <label for="ap_stream">Stream </label>
+              <input  id="ap_streamurl"   value="http://85.21.79.93:8040;" type="text" size:"30" title="enter stream url + semicolon"></input>
+              <br />
+              <!-- <span class="lblcomment">(enter stream url)</span> -->
+            </li>
+
+            <li>
+              <input  id="ap_radio"  name="source" value="false" type="radio"></input>
+              <label for="ap_radio">Radio </label>
+              <select id="ap_radiourl" name="ap_radiourl" size="1" style="margin-left: 14px;"></select>
+            </li>
+
+            <div id="localfiles" style="display:none">
+              <li style="line-height: 4px">&nbsp;</li>
+              <li>
+                <input style="display:none"  type="file" id="ap_selectFolders" webkitdirectory multiple />
+                <input style="display:none"  type="file" id="ap_selectFiles" multiple />
+                <label>
+                  Or select mp3
+                  <a class="link" id="ap_choosefiles" href="#">files</a> or 
+                  <a class="link" id="ap_choosefolders" href="#">folders</a>; 
+                  <span id="txtSelected" class="lblcomment">0 files loaded</span>
+                </label>
+              </li>
+            </div>
+
+            <li style="line-height: 4px">&nbsp;</li>
+            <li>
+              <label style="vertical-align: top;">Volume</label>
+              <input  id="ap_volume" type="range" min="0" max="100" value="50" step="1" ></input>
+              <label for="ap_volume" id="txtVolume" style="vertical-align: top;">50%</label>
+            </li>
+            <li>
+              <span id="ap_msg"></span>
+            </li>
+          </ul>
+
+          <p class="orange"><strong>Warning:</strong> Some effects may disturb your visual perception, don't star at the screen to long and keep distance from dangerous machines for a while.
+          </p>
+        </div>
       </div>
     </div>
 
     <div id="scripts" style="display:none">
 
-    <!-- 
-      https://github.com/aadsm/JavaScript-ID3-Reader/
-    -->
+      <!-- 
+        https://github.com/aadsm/JavaScript-ID3-Reader/
+      -->
 
       <script type="text/javascript" src="libs/id3/stringutils.js"></script>
       <script type="text/javascript" src="libs/id3/bufferedbinaryajax.js"></script>
@@ -143,16 +208,22 @@
       <script type="text/javascript" src="source/filter.js"></script>
       <script type="text/javascript" src="source/audioplayer.js"></script>
       <script type="text/javascript" src="source/playlists.js"></script>
+      <script type="text/javascript" src="source/color.js"></script>
       <script type="text/javascript" src="source/dpcs.js"></script>
+      <script type="text/javascript" src="source/editor.js"></script>
       <script type="text/javascript" src="source/projector.js"></script>
       
       <!-- load effects to debug -->
       <script type="text/javascript"> window.EFX = window.EFX || {}; </script>
+      <script type="text/javascript" src="effects/effects.pixastic.js"></script>
       <script type="text/javascript" src="effects/effects.text.js"></script>
       <script type="text/javascript" src="effects/effects.audio.js"></script>
       <script type="text/javascript" src="effects/effects.time.js"></script>
       <script type="text/javascript" src="effects/effects.specials.js"></script>
+      <script type="text/javascript" src="effects/effects.gestures.js"></script>
       <script type="text/javascript" src="effects/effects.basic.js"></script>
+
+      <script type="text/javascript" src="data/words.js"></script>
       <!-- end  effects to debug -->
 
 

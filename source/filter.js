@@ -20,16 +20,16 @@ function Filter(cfg){
     "dat": "destination-atop"
   };
 
+  this.dom = false;
+
   this.parent = null;
-  
-  this.width  = 1;
-  this.height = 1;
+  this.width  = null;
+  this.height = null;
 
   this.cfg = cfg || {};
-  this.dom = false;
   this.projector = null;
-  this.lastFrame = 0;
-  this.curFrame  = 0;
+  this.lastFrame = null;
+  this.curFrame  = null;
 
   this.source = document.createElement("canvas");
   this.source.style.background = "transparent";
@@ -42,14 +42,14 @@ function Filter(cfg){
 
   this.ops = { // overwrite to have out of the box working effects
     a: 0.9,    // alpha
-    c: "",     // blendColor, "" => not active
     o: "sov",  // see gcos
     r: 0.0,    // rotation
     p: "rel",  // position: relative, center, dynamic, fil
     l: 0.5,    // left relative to target canvas
     t: 0.5,    // top
     w: 0.8,    // width
-    h: 0.8     // height
+    h: 0.8,    // height
+    m: false
   };
 
   for (p in cfg) {
@@ -60,11 +60,12 @@ function Filter(cfg){
 Filter.prototype = {
   tick:         null,  /* gets show wide called, if defined, see mouse */
   load:         function (onloaded){onloaded();  /* probable overwrite, remember the callback */ },
-  resize:       new Function(), // overwrite me if needed, see Feedback
-  beforeDraw:   new Function(), // overwrite me for painting, see Delay, Spectrum
-  afterDraw:    new Function(), // overwrite me for arithmetic, see Video
-  afterRender:  new Function(), // overwrite me for very special features, see Feedback
-  init: function (projector, onloaded){
+  beforeRender: new Function(), // called before local render (before childs)
+  beforeDraw:   new Function(), // called after local draw (after childs)
+  afterDraw:    new Function(), // called after local draw
+  afterRender:  new Function(), // called after global render
+  resize:       function(ctxs){this.resizeToParent([this.source]);},
+  init:         function (projector, onloaded){
     this.projector = projector;
     if(this.dom){
       document.getElementById("hidden").appendChild(this.source);
@@ -93,11 +94,11 @@ Filter.prototype = {
 
     });
   },
-  applyFillColor:   function (color){
-    this.ctx.fillStyle = Colors.read(color);
+  applyFillStyle:   function (color){
+    this.ctx.fillStyle = Color(color).css;
   },
-  applyStrokeColor: function (color){
-    this.ctx.strokeStyle = Colors.read(color);
+  applyStrokeStyle: function (color){
+    this.ctx.strokeStyle = Color(color).css;
   },
   applyFont:        function (font){
 
@@ -133,6 +134,19 @@ Filter.prototype = {
 
     switch (ops.p) {
 
+      case "fix" :
+        dX = (tw + ops.l) % tw;
+        dY = (th + ops.t) % th;
+        break;
+
+      case "ash": // height is master, calc width, reproduce aspect
+        // sw = sh ;//* tw/th;
+        sw = sh * as ;
+        r1 = -sw/2;
+        r3 = sw;
+        dX =  tw/2; dY =  th/2;
+        break;
+
       case "cnt" :
         dX =  tw/2; dY =  th/2;
         break;
@@ -142,11 +156,13 @@ Filter.prototype = {
         dX =  tl; dY = tt;
         break;
 
-      case "fil":
+      case "fil": // for videos
         r1 = 0; r2 = 0; r3 = tw; r4 = th;
         break;
 
     }
+
+    if (ops.m) {sX = -sX;}
 
     return [[r1, r2, r3, r4], [dX, dY, sX, sY, rot]];
 
@@ -167,15 +183,17 @@ Filter.prototype = {
       }
     }
 
-    return function(message){
+    return function filterConnect(message){
 
       var o, c, params, n = self.name,
           ops = H.clone(self.ops),
           ctx, frame, sector;
 
       if (message.command === "collect") {
-        message.filters.push(self);
+        self.parent = message.parent;
+        message.filters.push(H.clone(self));
         for (c in childs){
+          message.parent = self;
           childs[c](message);}
         return;}
 
@@ -187,14 +205,16 @@ Filter.prototype = {
           childs[c](message);}
         return;}
 
-  // only command = 'render' left
-      ctx = message.ctx;
-      frame = message.frame;
-      sector = message.sector;
 
-      for (c in childs){
-        message.ctx = self.ctx;
-        childs[c](message);}
+
+  // only command = 'render' left
+      message.filters.push(self);
+      ctx    = message.ctx;
+      frame  = message.frame;
+      sector = message.sector;
+      self.parent = message.parent;
+
+      self.curFrame = frame;
 
       for (o in drawOps) {
         if (o in self.ops){
@@ -214,19 +234,28 @@ Filter.prototype = {
         }
       }
 
-      self.curFrame = frame;
+      self.beforeRender(ops, ctx);
+
+      for (c in childs){
+        message.ctx = self.ctx;
+        message.parent = self;
+        childs[c](message);}
+
       self.beforeDraw(ops, ctx);
 
       // turns ops into real pixel
       params = self.calcParams(ctx, ops, frame, sector);
 
+      // for debugging
       self.lastRect  = params[0].slice(0);
       self.lastTrans = params[1];
-      self.lastOps   = ops;
+      self.lastOps   = H.clone(ops); //Special for Time.Blend.Color
+      self.lastOps1   = H.clone(ops); //Special for Time.Blend.Color
 
+      // prepend myself
       params[0].unshift(self.source);
 
-      ctx.save();
+      ctx.save(); // not needed !!!
 
       ctx.globalAlpha = ops.a;
       ctx.globalCompositeOperation = self.gcos[ops.o];
@@ -237,15 +266,6 @@ Filter.prototype = {
       ctx.rotate(self.lastTrans[4]);
 
       ctx.drawImage.apply(ctx, params[0]);
-
-      if (ops.bc) {
-        ctx.globalCompositeOperation = "source-atop";
-        ctx.fillStyle = Colors.read(ops.bc);
-        ctx.fillRect.apply(ctx, self.lastRect);}
-
-      if (ops.c !== "") {
-        ctx.fillStyle = Colors.read(ops.c);
-        ctx.fillRect.apply(ctx, self.lastRect);}
 
       ctx.restore();
 
