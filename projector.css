@@ -2,10 +2,9 @@
 
 body, html {
   margin:0; padding:0; border:0; width: 100%; height: 100%; overflow: hidden;
-  font: 0.8em sans-serif; 
   background: rgb(32, 32, 32); 
   font-family: Arial, Helvetica, Sans-serif;
-  font-size: 14px;
+  font-size: 16px;
 }
 
 #projector, #hidden {
@@ -16,30 +15,130 @@ body, html {
   display: block;
 }
 
+.intro {
+  margin-top: 8px;
+  font-size: 0.9em;
+  line-height: 1.1em;
+}
+
+.intro a {
+  text-decoration: none;
+  color: #888;
+  font-weight: bold;
+}
+
+.intro a:hover {
+  color: #000;
+}
+
+#pjs {
+  font-size: 1.8em;
+  font-weight: bold;
+}
+
+.intro p {
+  margin: 8px 0;
+  line-height: 1.2em  ;
+  /*line-height: 0.2em  ;*/
+}
+
+p.orange {
+  color: darkorange;
+}
+
+/*
+############  E D I T O R  ####################################################
+*/
+
+#editor canvas, input, select, div, span, h1, h2, h3, img {
+  margin:0; padding:0; border: 0;
+}
+
+#editor {
+  display: none; 
+  background: #888;
+}
+
+.middle {
+  position: relative;
+  top: 50%;
+}
+
+#editor h1 {
+  color: white;
+  font-size: 2em;
+  line-height: 1.3em;
+  margin: 0 0 0 0 ;  
+}
+
+#editor h3 {
+  display: inline;
+  color: white;
+  font-size: 1.2em;
+  line-height: 1.6em;
+  margin: 0 0 0 4px;
+}
+
+#editor #colors {
+  background: #AAA;
+}
+
+#editor canvas {
+  background: transparent;
+}
+
+#editor input {
+  height: 1.2em;
+  width: 140px;
+  border: 1px solid white;
+}
+#editor #cvsRange, #imgRange {
+  height: 1.2em;
+  width: 256px;
+}
+#editor #cvsRange {width: 32px;}
+#editor #txtRange {
+  width: 300px;
+  font-size: 0.74em;
+  padding: 0 2px 0 2px;
+}
+#imgRange {
+  background-image: url(media/chess.png);
+  background-repeat: repeat;  
+}
+
+/*
+############  H I D D E N   ###################################################
+*/
+
 #hidden {
   background: rgb(128, 128, 128);
-  display: none;
 }
-#hidden canvas {
+#hidden canvas, video {
   border: 1px solid white;
   margin: 1px;
-  width: 256px;
-  height: 256px;
+  width: 128px;
+  height: 128px;
+  vertical-align: top;
 }
 #hidden #test {
-  border: 1px solid white;
-  margin: 1px;
-  width: 64px;
-  height: 64px;
+  border: 1px solid orange;
 }
+
+
+/*
+############  A U D I O S E L E C T O R   #####################################
+*/
 
 #audioselector {
   position: relative;
   top: 16px;
-  width: 340px; 
-  height: 220px;
+  width: 400px; 
+  height: 460px;
   margin: auto auto;
   background: transparent;
+  overflow-y: auto;
+  overflow-x: hidden;
 }
 
 #audioselector h3 {
@@ -68,46 +167,60 @@ body, html {
   height: 12px;
 }
 
-#audioselector input {
+#audioselector input, select {
   margin: 0 4px 0 0;
-  padding: 0;
+  padding: 0 0 0 4px;
   vertical-align: text-bottom;
-  background: transparent;
+  background: white;
+  font-size: 0.8em;
+  border: 1px solid #888;
+  border-radius: 3px;
 }
 
 #audioselector label {
   display: inline;
-  color: #666;
+  color: #333;
   font-size: 0.85em;
   margin: 0 0 0 2px;
 }
 
-#audioselector #ap_url {
+#audioselector .lblcomment{
+  color: #333;
+  font-size: 0.7em;
+}
+
+
+
+#audioselector #ap_streamurl {
   border: 1px solid #888;
   border-radius:3px;
   margin: 0 0 0 8px;
   padding: 0px 1px 0 4px;
-  font-size: 0.9em;
-  width: 140px;
-  height: 1.3em;;
+  font-size: 0.8em;
+  width: 200px;
+  height: 1.3em;
 }
 
 #audioselector #ap_hide {
-  margin: 0 0 0 18px;
+  position: absolute;
+  top: 12px;
+  right: 8px;
+  z-index: 10;
 }
 
 .container {
   position: absolute;
-  margin: 0 12px;
-  top: 0;
+  margin: 4px 18px;
+  top: 10px;
 }
 
 .background {
-  background: #fff;
-  width: 100%;
-  height: 100%;
-  opacity: 0.8;
-  border: 3px solid #666;
+  /*background: rgb(216, 216, 216);*/
+  background: white;
+  width: 98%;
+  height: 98%;
+  opacity: 1;
+  border: 3px solid #444;
   border-radius: 11px;
 }
 
@@ -157,6 +270,14 @@ body, html {
   text-align: center;
   border: 3px solid #a33;
   border-radius: 13px;
+}
+#error a {
+  text-decoration: none;
+  font-weight: bold;
+  color: #ddd;
+}
+#error a:hover {
+  color: #fff;
 }
 #errorMessage {
   font-size: 24px;

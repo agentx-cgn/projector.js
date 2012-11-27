@@ -16,6 +16,16 @@ var AudioPlayer = (function(){
 
       status = {},
 
+      statusAudio = "mute", // "mute, error, playing"
+
+      timerMediaCheck,
+      timerMediaTimeout = 5 * 1000,
+      playerCounter = 0,
+
+      player = null,
+      playlist, 
+      trackinfo = ["n/a"],
+
       context, 
       streamMicro, 
       nodeSource, 
@@ -35,26 +45,28 @@ var AudioPlayer = (function(){
       arrayFrequency = [],
       arrayWaveform = [],
 
-      dpcsBands = 16,    // seems to be the min value
+      bandsDPCS = 16,    // seems to be the min value
       dpcsSpectrum = 0,
       dpcsDynamic = 0, 
       dpcsDynaBand = 0,
       dpcsVolume = 0,
       arrayDPCS = [],
       bufDPCS = [],
+      bufVolume = createRingBuffer(fps),
 
-      beatdetector,
+      beatdetector = new BeatDetektor(),
       bpm,
       bdtQuality,
       bdtJitter,
       bdtBeatCount,
 
-      player = null,
-      playlist, 
-      trackinfo = ["n/a"],
-
       numErrors = 0,
       maxErrors = 20;
+
+      for (i=0; i<bandsDPCS; i++) {
+        bufDPCS[i] = createRingBuffer(fps);
+      }
+
 
   function r (n, p){var e = Math.pow(10, p || 1); return ~~(n*e)/e;}
 
@@ -76,37 +88,77 @@ var AudioPlayer = (function(){
     }
   }
 
-  // function getVolume(){
-  //   var i, len = arrayDPCS.length, vol = 0;
-  //   if (!isEnabled){return 0;}
-  //   nodeDPCS.getByteFrequencyData(arrayDPCS);
-  //   for (i = 0; i < len; i++) {
-  //     vol += arrayDPCS[i];
-  //   }
-  //   return vol/len;
-  // }
-
   function setVolume(volume){
     status.volume = volume;
     nodeGain.gain.value = volume/100;
+    $("#ap_volume").val(status.volume);
+    $("#txtVolume").val(status.volume + "%");
   }
 
-  function updateGraph(nSource){
-    nodeGain.gain.value = 0;
-    nSource.connect(nodeGain);
-    nodeGain.connect(nodeAnalyser);
-    nodeAnalyser.connect(nodeDPCS);
-    nodeDPCS.connect(context.destination);
-    nodeGain.gain.value = status.volume/100;
-  }
+  function updateContext(source){
 
+    // Source > Gain > Analyser > DPCS > Destination
 
-  function updateOldGraph(oldMedium, newMedium){
-    if(oldMedium){
-      oldMedium.nodeSource.disconnect(0);
+    resetArrays();
+    beatdetector.reset();
+
+    if (!context){context = new AudioContext();}
+    if (context.activeSourceCount){
+      if(nodeSource){nodeSource.disconnect();}
+      if(nodeGain){nodeGain.disconnect();}
+      if(nodeDPCS){nodeDPCS.disconnect();}
+      if(nodeAnalyser){nodeAnalyser.disconnect();}
+      nodeDPCS = null;
+      nodeAnalyser = null;
+      nodeGain = null;
+      nodeSource = null;
+      beatdetector.reset();
+      resetArrays();
     }
-    newMedium.nodeSource.connect(nodeGain);
-  }
+
+    if (source && source === player) {
+      nodeSource = context.createMediaElementSource(player);
+
+    } else if (source === "sine"){
+      nodeSource = context.createOscillator();
+      nodeSource.type = 0; // 4 types of oscillators are available. They are Sine wave = 0, Square wave = 1, Sawtooth wave = 2, Triangle wave = 3, a fourth option exists as well called "custom".
+      nodeSource.frequency.value = 440;
+      nodeSource.noteOn(0.1);
+    }
+
+    if (nodeSource){
+      buildNodes();
+      nodeGain.gain.value = 0;
+      nodeSource.connect(nodeGain);
+      nodeGain.connect(nodeAnalyser);
+      nodeAnalyser.connect(nodeDPCS);
+      nodeDPCS.connect(context.destination);
+      nodeGain.gain.value = status.volume/100;
+      arrayFrequency =  new Uint8Array(nodeAnalyser.frequencyBinCount);
+      arrayWaveform  =  new Uint8Array(nodeAnalyser.frequencyBinCount);
+      arrayDPCS =       new Uint8Array(nodeDPCS.frequencyBinCount);
+    }
+
+    function resetArrays(){
+      arrayFrequency =  new Uint8Array(bandsAnalyser);
+      arrayWaveform  =  new Uint8Array(bandsAnalyser);
+      arrayDPCS =       new Uint8Array(bandsDPCS);
+      bufVolume = createRingBuffer(fps);
+      for (i=0; i<bandsDPCS; i++) {
+        bufDPCS[i] = createRingBuffer(fps);
+      }
+    }
+
+    function buildNodes(){
+
+      nodeGain = context.createGainNode();
+      nodeAnalyser = context.createAnalyser();
+      nodeAnalyser.smoothingTimeConstant = 1/fps/2;
+      nodeAnalyser.fftSize = bandsAnalyser * 2;
+      nodeDPCS = context.createAnalyser();
+      nodeDPCS.smoothingTimeConstant = 0;
+      nodeDPCS.fftSize = bandsDPCS * 2; 
+  }}
 
   function updateTrackInfo(src){
     var data, len;
@@ -159,22 +211,26 @@ var AudioPlayer = (function(){
   return {
     boot: function(fps){
       self = this;
-      this.__defineGetter__('enabled',      function( ){return isEnabled;});
-      this.__defineGetter__('info',         function( ){return fmtInfo(media[idx]);});
-      this.__defineGetter__('trackInfo',    function( ){return trackinfo;});
-      this.__defineSetter__('volume',       function(v){setVolume(v);});
+      this.__defineGetter__('enabled',       function( ){return isEnabled;});
+      this.__defineGetter__('context',       function( ){return context;});
+      this.__defineGetter__('statusAudio',   function( ){return statusAudio;});
+      this.__defineGetter__('info',          function( ){return fmtInfo(media[idx]);});
+      this.__defineGetter__('trackInfo',     function( ){return trackinfo;});
+      this.__defineSetter__('volume',        function(v){setVolume(v);});
 
-      this.__defineGetter__('dataDPCS',     function( ){return arrayDPCS;});
-      this.__defineGetter__('bandsDPCS',    function( ){return dpcsBands;});
-      this.__defineGetter__('volume',       function( ){return dpcsVolume;});
-      this.__defineGetter__('spectrum',     function( ){return dpcsSpectrum;});
-      this.__defineGetter__('dynaband',     function( ){return dpcsDynaBand;});
-      this.__defineGetter__('dynamic',      function( ){return dpcsDynamic;});
+      this.__defineGetter__('dataDPCS',      function( ){return arrayDPCS;});
+      this.__defineGetter__('bandsDPCS',     function( ){return bandsDPCS;});
+      this.__defineGetter__('volume',        function( ){return dpcsVolume;});
+      this.__defineGetter__('avgvolume',     function( ){return bufVolume.avg();});
+      this.__defineGetter__('spectrum',      function( ){return dpcsSpectrum;});
+      this.__defineGetter__('dynaband',      function( ){return dpcsDynaBand;});
+      this.__defineGetter__('dynamic',       function( ){return dpcsDynamic;});
 
       this.__defineGetter__('bandsAnalyser', function( ){return bandsAnalyser;});
       this.__defineGetter__('dataFrequency', function( ){return arrayFrequency;});
       this.__defineGetter__('dataWaveform',  function( ){return arrayWaveform;});
       this.__defineGetter__('BeatDetector',  function( ){return beatdetector;});
+      this.__defineGetter__('BeatCount',     function( ){return bdtBeatCount;});
       
       return self;
     },
@@ -182,40 +238,17 @@ var AudioPlayer = (function(){
 
       fps = Projector.fps;
       bandsAnalyser = mapQuality[Projector.audioquality] || 256;
-      
-      context = new AudioContext();
-
-      nodeGain = context.createGainNode();
-
-      // EFX
-      nodeAnalyser = context.createAnalyser();
-      nodeAnalyser.smoothingTimeConstant = 1/fps/2;
-      nodeAnalyser.fftSize = bandsAnalyser * 2;
-      arrayFrequency = new Uint8Array(nodeAnalyser.frequencyBinCount);
-      arrayWaveform  = new Uint8Array(nodeAnalyser.frequencyBinCount);
-
-      // DPCS
-      nodeDPCS = context.createAnalyser();
-      nodeDPCS.smoothingTimeConstant = 0;
-      nodeDPCS.fftSize = dpcsBands * 2; 
-      arrayDPCS = new Uint8Array(nodeDPCS.frequencyBinCount);
-      beatdetector = new BeatDetektor();
-
-      // Another Source
-      nodeSine = context.createOscillator();
-      nodeSine.type = 0; // 4 types of oscillators are available. They are Sine wave = 0, Square wave = 1, Sawtooth wave = 2, Triangle wave = 3, a fourth option exists as well called "custom".
-
-
+      updateContext();
       isEnabled = true;
       
     },
     tick:  function(frame){
 
-      var i, vol = 0, len = dpcsBands, 
+      var i, vol = 0, len = bandsDPCS, 
           dynMax = 0, dynMin = 0, // band = 0, 
           maxDif = 0, minMin, maxMax;
 
-      if (isEnabled){
+      if (nodeAnalyser){
 
         // for Spectrum effect
         nodeAnalyser.getByteFrequencyData(arrayFrequency);
@@ -229,6 +262,7 @@ var AudioPlayer = (function(){
           bufDPCS[i].push(arrayDPCS[i]);
         }
         dpcsVolume = vol/len;
+        bufVolume.push(~~dpcsVolume);
 
         // max freq band + volume/16
         dpcsSpectrum = 0;
@@ -252,18 +286,26 @@ var AudioPlayer = (function(){
             maxDif = dynMax - dynMin;
           }
         }
-        dpcsDynamic = H.scaleRange(arrayDPCS[dpcsDynaBand], minMin, maxMax, 0, 255);
+        if (arrayDPCS[dpcsDynaBand] === 0) {
+          dpcsDynamic = 0;
+        } else  {
+          dpcsDynamic = H.scaleRange(arrayDPCS[dpcsDynaBand], minMin, maxMax, 0, 255);
+        }
+        if (isNaN(dpcsDynamic)){ // Why
+          dpcsDynamic = 0; 
+          // console.log(dynMin, dynMax, maxDif, dpcsDynaBand, arrayDPCS[dpcsDynaBand], arrayDPCS);
+        }
       }
 
     },
     tickBeat: function(){
-      if (isEnabled){
+      // if (context.activeSourceCount){
         beatdetector.process(window.performance.now()/1000, arrayFrequency);
         bpm =           beatdetector.win_bpm_int/10;
         bdtJitter =   r(beatdetector.bpm_offset, 6);
         bdtQuality =  r(beatdetector.quality_total, 4);
         bdtBeatCount =  beatdetector.beat_counter;
-      }
+      // }
     },
 
     switchQuality: function(index){
@@ -282,15 +324,18 @@ var AudioPlayer = (function(){
 
       var src = settings.source;
 
-      if      (src === "sine")     {self.switchAudio(src, settings.sine);}
-      else if (src === "radio")    {self.switchAudio(src, settings.stream);}
+      if      (src === "mute")     {self.switchAudio(src);}
+      else if (src === "sine")     {self.switchAudio(src, settings.sine);}
+      else if (src === "radio")    {self.switchAudio(src, ["http://38.104.130.91:8800/;"]);}
       else if (src === "files")    {self.switchAudio(src, settings.files);}
-      else if (src === "playlist") {self.switchAudio(src, settings.playlist);}
-      else {self.switchAudio(src);}
+      else if (src === "stream")   {self.switchAudio(src, [DB.Data.audio.stream]);}
+      else if (src === "playlist") {self.switchAudio(src, Loader.playlist);}
+      else {console.log("AP.start: unknown source", src);}
 
     },  
     next: function(){
       if (playlist) {
+        self.switchAudio("mute");
         self.switchAudio("files", playlist);
       }
     },
@@ -300,43 +345,48 @@ var AudioPlayer = (function(){
 
       var file;
 
+      if(timerMediaCheck){
+        clearTimeout(timerMediaCheck);
+        timerMediaCheck = null;
+      } 
+
+      // console.log(source, (data) ? data[0] : "nodata");
+
       switch (source) {
 
         case "mute":
-          playlist = undefined;
+          statusAudio = "mute";
           updateTrackInfo("");
           if (player){
             player.pause();
+            player.removeEventListener('error',      onError);
+            player.removeEventListener('ended',      onEnded);
+            player.removeEventListener('timeupdate', onTimeupdate);
+            player.removeEventListener('canplay',    onCanplay);
             player.src = "";
             document.getElementById("hidden").removeChild(player);
-            player = undefined;
+            player = null;
           }
-          nodeGain.gain.value = 0;
-          nodeSine.disconnect(0);
-          if (nodeSource){
-            nodeSource.disconnect(0);
-            nodeSource = undefined;
-          }
+          updateContext(null);
           break;
           
         case "sine":
+          statusAudio = "playing";
           self.switchAudio("mute");
-          nodeSine.frequency.value = parseInt(data, 10);
-          updateGraph(nodeSine);
-          nodeSine.noteOn(0.1);
+          updateContext("sine");
           break;
           
         case "micro":
           self.switchAudio("mute");
           if (streamMicro){
-            nodeSource = context.createMediaStreamSource(streamMicro);
-            updateGraph(nodeSource);
+            // nodeSource = context.createMediaStreamSource(streamMicro);
+            updateContext(streamMicro);
           } else {
             navigator.getUserMedia({audio: true, toString : function() {return "audio";}},
               function(streamMicro) {
 
                 nodeSource = context.createMediaStreamSource(streamMicro);
-                updateGraph(nodeSource);
+                updateContext(nodeSource);
 
                 console.log("AP.micro", streamMicro, nodeSource);
 
@@ -363,61 +413,85 @@ var AudioPlayer = (function(){
 
           break;
           
+        case "stream":
+          self.switchAudio("mute");
+          self.switchAudio("files", data);
+          break;
+          
         case "radio":
           self.switchAudio("mute");
           self.switchAudio("files", data);
           playlist = undefined;
           break;
-          
+            
         case "playlist":
           self.switchAudio("mute");
-          var list, xhr = new XMLHttpRequest();
-          xhr.open("GET", "media/audio/"+ data, true);
-          xhr.onreadystatechange = function() {
-            if (xhr.readyState === 4) {
-              list = xhr.responseText.split("\n");
-              self.switchAudio("files", list);
-            }
-          };
-          xhr.send(null);
+          self.switchAudio("files", data);
           break;
           
+
         case "files":
+
           self.switchAudio("mute");
           file = data[parseInt(Math.random() * data.length, 10)];
           playlist = data;
-          player = new Audio();
-          player.addEventListener('error',   function (e){
-            if(player && player.src && (e.target || e.srcElement)) {
-              numErrors += 1;
-              console.warn("AP.error." + numErrors, errorMsg(e), "\n", player.src);
-              if (numErrors < maxErrors) {
-                self.switchAudio("mute");
-                self.switchAudio("files", data);
-              }
-            }
 
-          });
-          player.addEventListener('ended',   function (){
-            self.switchAudio("mute");
-            self.switchAudio("files", data);
-          });
-          player.addEventListener('canplay', function (e){
-            updateTrackInfo(player.src);
-            nodeSource = context.createMediaElementSource(player);
-            updateGraph(nodeSource);
-            beatdetector.reset();
-            player.play();
-          });
-          // player.volume = status.volume/100;
+          timerMediaCheck = setTimeout(function(){
+            console.log("MediaTimeout");
+          }, timerMediaTimeout);
+
+          playerCounter += 1;
+          player = document.createElement("AUDIO");
+          player._index = playerCounter;
+
+          player.addEventListener('error',      onError);
+          player.addEventListener('ended',      onEnded);
+          player.addEventListener('timeupdate', onTimeupdate);
+          player.addEventListener('canplay',    onCanplay);
+
           player.controls = true;
           player.src = file;
           player.title = file;
           document.getElementById("hidden").appendChild(player);
+
+          function onError(e){
+
+            if (e.target._index === playerCounter){
+              if(!timerMediaCheck){
+                if(player) {
+                // if(player && player.src && (e.target || e.srcElement)) {
+                  statusAudio = "error";
+                  numErrors += 1;
+                  console.warn("AP.error." + numErrors, errorMsg(e), "\n", player.src);
+                }
+              }
+            }
+          }
+
+          function onEnded(){
+            self.switchAudio("mute");
+            self.switchAudio("files", data);
+          }
+          function onTimeupdate(e){
+            if(timerMediaCheck){
+              clearTimeout(timerMediaCheck);
+              timerMediaCheck = null;
+            } 
+            // else {console.log(e);}
+          }
+
+          function onCanplay (e) {
+            updateTrackInfo(player.src);
+            updateContext(player);
+            player.play();
+            statusAudio = "playing";
+          }
+
           break;
 
+
         default:
-          console.log("AP.selectAudio.error ", source);
+          console.log("AP.selectAudio.error ", source, data);
           break;
       }
 
@@ -431,20 +505,20 @@ var AudioPlayer = (function(){
 
       fps = Projector.fps;
 
-      for (i=0; i<dpcsBands; i++) {
-        bufDPCS[i] = createRingBuffer(fps);
+      // console.log(Loader.features)
+
+      if(Loader.features.readlocal.available){
+        $("#localfiles").css({display: 'block'});
       }
 
-      document.getElementById("audioselector").onpaste = function(e) {
-        var paste = e.clipboardData && e.clipboardData.getData ?
-            e.clipboardData.getData('text/plain') :                // Standard
-            window.clipboardData && window.clipboardData.getData ?
-            window.clipboardData.getData('Text') :                 // MS
-            false;
-        if(paste) {
-          console.log(paste);
-        }
-      };
+      if(Loader.features.readlocal.available){
+        $("#spnPlaylist").text(Loader.playlist.length + " files loaded");
+        $("#localplaylists").css({display: 'block'});
+      }
+
+      if(!Loader.features.runslocal.available){
+        $("#audioselector").css({display: 'block'});
+      }
 
       if (curSettings.source){
         $('#ap_' + curSettings.source).attr('checked', 'checked');
@@ -459,14 +533,11 @@ var AudioPlayer = (function(){
       }
 
       $("#ap_volume").val(curSettings.volume);
-      $("#ap_url").val(curSettings.stream);
+      $("#ap_streamurl").val(curSettings.stream);
       $("#txtVolume").text(curSettings.volume +"%");
 
-      // $('#audioselector').on('over', function(e) {
-      //   console.log("huhu")
-      // });
-
       $('#audioselector').bind({
+        
         dragover: function (e) {
             $(".background").addClass('hover');
             return eat(e);
@@ -549,24 +620,32 @@ var AudioPlayer = (function(){
       $('#ap_selectFolders').change(function() {
         processSelection(this.files);
       });
+      $('#ap_radiourl').change(function() {
+        $('#ap_radio').attr('checked', 'checked');
+        AudioPlayer.switchAudio('radio', [this.value]);
+      });
 
-      // manages the radios
+      // manages the radios onclick
       $('#audioselector input[type="radio"]').on("click", function(e){
         var source = this.id.substr(3);
         curSettings.source = source;
-        if      (source === "sine")     {self.switchAudio(source, curSettings.sine);}
-        else if (source === "radio")    {self.switchAudio(source, [$('#ap_url').val()]);}
-        else if (source === "files")    {self.switchAudio(source, curSettings.files);}
-        else if (source === "playlist") {self.switchAudio(source, curSettings.playlist);}
-        else {self.switchAudio(source);}
+        DB.Data.audio.source = source;
+        DB.save();
+        if      (source === "mute")       {self.switchAudio(source);}
+        else if (source === "sine")       {self.switchAudio(source, curSettings.sine);}
+        else if (source === "files")      {self.switchAudio(source, curSettings.files);}
+        else if (source === "playlist")   {self.switchAudio(source, Loader.playlist);}
+        else if (source === "radio")      {self.switchAudio(source, [$('#ap_radiourl').val()]);}
+        else if (source === "stream")     {self.switchAudio(source, [$('#ap_streamurl').val()]);}
+        else {console.log("AP.activate: don't know source:", source);}
       });
 
-      $('#ap_url').keypress(function (e) {
+      $('#ap_streamurl').keypress(function (e) {
         if (e.which === 13) {
-          curSettings.source = "radio";
-          curSettings.stream = $('#ap_url').val();
-          $('#ap_radio').attr('checked', 'checked');
-          self.switchAudio(curSettings.source, $('#ap_url').val());
+          curSettings.source = "stream";
+          curSettings.stream = $('#ap_streamurl').val();
+          $('#ap_stream').attr('checked', 'checked');
+          self.switchAudio(curSettings.source, [$('#ap_streamurl').val()]);
         }
       });
 

@@ -44,6 +44,13 @@ navigator.sayswho = (function(){
   return  M ? [M[1], M[2]]: [N, navigator.appVersion, '-?'];
 })();
 
+// http://stackoverflow.com/questions/11219731/trim-function-doesnt-work-in-ie8
+if(typeof String.prototype.trim !== 'function') {
+  String.prototype.trim = function() {
+    return this.replace(/^\s+|\s+$/g, ''); 
+  }
+}
+
 
 // other stuff
 // function pad(s, l){l = l || 2; var out = "0000" + s; return out.substr(out.length -l);}

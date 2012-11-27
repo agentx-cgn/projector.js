@@ -23,7 +23,6 @@ EFX.Audio.Waveform.prototype.load = function(onloaded){
 
   this.ops = { // overwrite to have out of the box working effects
     a: 1,    // alpha
-    c: "",     // blendColor, "" => not active
     o: "sov",  // see gcos
     r: 0.0,    // rotation
     p: "rel",  // position: relative, center, dynamic, fil
@@ -33,12 +32,7 @@ EFX.Audio.Waveform.prototype.load = function(onloaded){
     h: 1     // height
   };
 
-
-  // this.width  = this.width  || 256;
-  // this.height = this.height || 256;
-
-  // this.width  = String(this.projector.audioplayer.dataWaveform.length);
-  this.width  = String(255);
+  this.width  = String(256);
   this.height = String(this.width);
   
   this.source.width  = Number(this.width);
@@ -47,13 +41,14 @@ EFX.Audio.Waveform.prototype.load = function(onloaded){
   this.styleUnder   = this.styleUnder   || "";      
   this.styleSignal  = this.styleSignal  || "white"; 
   this.styleOver    = this.styleOver    || ""; 
-  this.signalWidth  = this.signalWidth  || 2;  
-  this.clear        = this.clear        || true;    // do clearEact on canvas
+  this.signalWidth  = this.signalWidth  || 0;  
+  this.clear        = this.clear        || false;    // do clearEact on canvas
 
   onloaded();
 
 };
-EFX.Audio.Waveform.prototype.beforeDraw = function(){
+EFX.Audio.Waveform.prototype.resize = new Function();
+EFX.Audio.Waveform.prototype.beforeDraw = function(ops){
 
   // better: http://www.htmlfivewow.com/demos/audio-visualizer/index.html
 
@@ -61,23 +56,27 @@ EFX.Audio.Waveform.prototype.beforeDraw = function(){
       sum = 0, avg = 0, len, hgt;
 
   len = array.length;
-  hgt = this.height/len;
+  hgt = this.source.height/len;
 
+  // ctx.setTransform(1, 0, 0, 1, 0, 0);
+  // ctx.transform(1, 0, 0, 1, -, -30);
   if (this.clear){
     ctx.clearRect(0, 0, this.source.width, this.source.height);
   }
 
-  ctx.fillStyle = this.fillStyle;
+  this.applyFillStyle("green");
+  ctx.fillRect(0, 0, 10, 10);
 
   if (this.styleUnder) {
     // first clear background from child render
     ctx.globalCompositeOperation = "destination-out";
-    ctx.fillStyle = "black";
+    // ctx.globalCompositeOperation = "source-over";
+    this.applyFillStyle("black");
     for (i = 0; i < len; i++) {
       y = i*hgt;
       ctx.fillRect(0, y, array[i], hgt);
     }
-    ctx.fillStyle = this.fillStyle;
+    ctx.fillStyle = Color("red");
     for (i = 0; i < len; i++) {
       y = i*hgt;
       ctx.fillRect(0, y, array[i], hgt);
@@ -86,7 +85,10 @@ EFX.Audio.Waveform.prototype.beforeDraw = function(){
 
   if (this.styleSignal && this.signalWidth) {
     ctx.globalCompositeOperation = "source-over";
-    ctx.fillStyle = Colors.read(this.styleSignal);
+    this.applyFillStyle(this.styleSignal);
+
+    // console.log()
+
     for (i = 0; i < len; i++) {
       y = i*hgt;  
       ctx.fillRect(array[i]-1, y, this.signalWidth, hgt);
@@ -141,11 +143,13 @@ EFX.Audio.Spectrum.prototype.beforeDraw = function(){
     // ctx.globalCompositeOperation = "destination-out";
     ctx.globalCompositeOperation = "source-over";
     ctx.fillStyle = "black";
+    this.applyFillstyle("black");
     for (i = 0; i < len; i++) {
       y = i*hgt;
       ctx.fillRect(0, y, array[i], hgt);
     }
-    ctx.fillStyle = Colors.read(this.styleUnder);
+    // ctx.fillStyle = Colors.read(this.styleUnder);
+    this.applyFillstyle(this.styleUnder);
     for (i = 0; i < len; i++) {
       y = i;
       ctx.fillRect(0, y, array[i], hgt);
@@ -154,7 +158,8 @@ EFX.Audio.Spectrum.prototype.beforeDraw = function(){
 
   if (this.styleSignal && this.signalWidth) {
     ctx.globalCompositeOperation = "source-over";
-    ctx.fillStyle = Colors.read(this.styleSignal);
+    // ctx.fillStyle = Colors.read(this.styleSignal);
+    this.applyFillstyle(this.styleSignal);
     for (i = 0; i < len; i++) {
       y = i*hgt;
       ctx.fillRect(array[i]-1, y, this.signalWidth, hgt);

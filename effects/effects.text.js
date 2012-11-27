@@ -2,7 +2,9 @@
 /*globals EFX, Filter, Pixastic, Loader*/
 
 
+
 EFX.Text = {};
+
 
 //--------------  L I S T -----------------------------------------------------
 //  
@@ -17,9 +19,9 @@ EFX.Text.List.prototype.load = function(onloaded){
 
   var i, cvs;
 
-  this.ops = {id: 0, a: 1, o: "sov", r: 0, c: "", p: "rel", l: 0.5, t: 0.5, w: 1, h: 1};
+  this.ops.id = 0;
+  this.ops.a  = 1;
 
-  this.id = 0;
   this.sources = [];
   this.list = this.list || [
     {id: 0, color: "white", font: ["normal", "bold", 0.25, "left", "sans-serif"], line: "projector.js"}
@@ -35,6 +37,7 @@ EFX.Text.List.prototype.load = function(onloaded){
     this.sources.push(cvs);
     if(this.dom){document.getElementById("hidden").appendChild(cvs);}
   }
+
   onloaded();
 
 };
@@ -56,7 +59,7 @@ EFX.Text.List.prototype.resize = function(){
     cvs.height = height;
     this.applyFont(line.font);
     ctx.textBaseline = "middle";
-    this.applyFillColor(line.color);
+    this.applyFillStyle(line.color);
     ctx.clearRect(0, 0, cvs.width, cvs.height);
     ctx.fillText(line.line, cvs.width/2, cvs.height/2);
 
@@ -68,11 +71,13 @@ EFX.Text.List.prototype.resize = function(){
 
 };
 EFX.Text.List.prototype.beforeDraw = function(ops){
-  this.source = this.sources[ops.id];
-  this.ctx = this.source.getContext("2d");
-  // set to real pixels, because size is defined with font size !!!
-  ops.w = String(this.source.width);
-  ops.h = String(this.source.height);
+  if (ops.id < this.sources.length){
+    this.source = this.sources[ops.id];
+    this.ctx = this.source.getContext("2d");
+    // set to real pixels, because size is defined with font size !!!
+    ops.w = String(this.source.width);
+    ops.h = String(this.source.height);
+  }
 };
 
 
@@ -212,61 +217,89 @@ EFX.Text.RandomWords.prototype.load = function(onloaded){
 
   this.distance = this.distance || 10;
   this.lineHeight = this.lineHeight || 80;
-  this.font = this.font || "80px sans-serif";
+  this.font = this.font || "64px sans-serif";
   this.color = this.color || "black";
   this.strokeStyle = this.strokeStyle || "white";
 
-  req.open('GET', this.data);
+  this.width  = "756";
+  this.height = "96";
+  this.clear = this.clear || false;
 
-  req.onreadystatechange = function (e) {
-    if (req.readyState === 4) {
-      try {
-        // changes this prototype
-        eval(req.responseText);
-        self.words = self.loadWords();
-        self.word = "...";
-        self.renderWord();      
-        onloaded(); 
-      } catch(er) {
-        onloaded({event:er, device:"Filter: " + self.name, message: "Could not load file: " + self.data});
-      }
-    }
-  };
-  req.onerror = function(e){
-        onloaded({event:e, device:"Filter: " + self.name, message: "Could not load file: " + self.data});
-  };
+  this.ops.color = "";
 
-  req.send();
+  // load sync
+  this.words = this.loadWords();
+  this.word = "...";
+  this.renderWord();      
+  onloaded();
+
+  // load async
+  // req.open('GET', this.data);
+
+  // req.onreadystatechange = function (e) {
+  //   if (req.readyState === 4) {
+  //     try {
+  //       // changes this prototype
+  //       eval(req.responseText);
+  //       self.words = self.loadWords();
+  //       self.word = "...";
+  //       self.renderWord();      
+  //       onloaded(); 
+  //     } catch(er) {
+  //       onloaded({event:er, device:"Filter: " + self.name, message: "Could not load file: " + self.data});
+  //     }
+  //   }
+  // };
+  // req.onerror = function(e){
+  //   onloaded({event:e, device:"Filter: " + self.name, message: "Could not load file: " + self.data});
+  // };
+
+  // req.send();
 
 };
 
-EFX.Text.RandomWords.prototype.renderWord = function(){
+EFX.Text.RandomWords.prototype.renderWord = function(ops){
+
   var ctx = this.ctx;
-  ctx.font = this.font;
-  this.source.width = this.ctx.measureText(this.word).width;
-  this.source.height = this.lineHeight;
-  this.drawOps.position.info.w = this.source.width  / this.projector.width;
-  this.drawOps.position.info.h = this.source.height / this.projector.height;
-  ctx.fillStyle = "rgba(0, 0, 0, 0)";
-  ctx.fillRect(0, 0, this.width, this.height);
-  ctx.fillStyle = this.color;
-  ctx.strokeStyle = this.strokeStyle;
+  
+  if (ops && ops.color) {
+    ctx.fillStyle = ops.color;
+  } else {
+    ctx.fillStyle = "black";
+  }
+  // ctx.strokeStyle = "rgba(0, 0, 0, 0)";
+  ctx.strokeStyle = "black";
+
   ctx.font = this.font;
   ctx.textBaseline = "middle";
+  ctx.textAlign = "center";
   ctx.lineWidth = 2;
-  ctx.fillText(this.word, 0, this.source.height/2 -4);
-  ctx.strokeText(this.word, 0, this.source.height/2 -4);
+  ctx.fillText(this.word, this.source.width/2, this.source.height/2 -4);
+  ctx.strokeText(this.word, this.source.width/2, this.source.height/2 -4);
+
 };
-EFX.Text.RandomWords.prototype.beforeDraw = function(){
+
+EFX.Text.RandomWords.prototype.beforeDraw = function(ops){
   
   var idx;
 
-  if (this.lastWordFrame + this.distance < this.curFrame){
+  this.beat = AudioPlayer.BeatCount;
+  this.frame = this.curFrame;
+
+  // if (this.lastWordFrame + this.distance < this.curFrame){
+  if ((!(this.beat % 1) && this.beat !== this.lastBeat) || (
+         this.frame > this.lastFrame +1)) {
+
+    if (this.clear){
+      this.ctx.clearRect(0, 0, this.source.width, this.source.height);
+    }
+
     idx = parseInt(Math.pow(10, Math.random() * 4), 10);
     idx = Math.min(this.words.length -1, idx);
     this.word = this.words[idx];
-    this.renderWord();
-    this.lastWordFrame = this.curFrame;
+    this.renderWord(ops);
+    this.lastBeat = this.beat;
+    this.lastFrame = this.frame;
   }
 
 };
