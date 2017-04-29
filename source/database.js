@@ -12,14 +12,17 @@
 
 */
 
-var DB = (function () {
+var DB = ((() => {
+  var self;
+  var data = {};
+  var db;
+  var dbName = "projector";
+  var dbEntry = "data";
+  var loc = document.location.href.substr(0, 18);
 
-  var self, data = {}, db, dbName = "projector", dbEntry = "data";
-
-  var loc = document.location.href.substr(0, 18),
-      playlist = (loc === "file:///home/noiv/") ? "T1667.music"  :
-                 (loc === "file:///D:/Dropbox") ? "T2200W.music" :
-                                                  "T2200.music";
+  var playlist = (loc === "file:///home/noiv/") ? "T1667.music"  :
+             (loc === "file:///D:/Dropbox") ? "T2200W.music" :
+                                              "T2200.music";
 
   var defs = {
     stats: {uses: 0, time: 0},
@@ -43,42 +46,42 @@ var DB = (function () {
   };
 
   function save(msg) {
-    db.setItem(dbEntry, JSON.stringify(data), function (value, key, db) {
+    db.setItem(dbEntry, JSON.stringify(data), (value, key, db) => {
       console.log("DB.saved", msg || "", db.type, db.name, db.length);
     });
   }
 
   function load(callback) {
-    var val = db.getItem(dbEntry, function (value) {
+    var val = db.getItem(dbEntry, value => {
       callback(value ? JSON.parse(value) : {fresh: true});
     });
   }
 
   function clearX() {
-    db.clear(function (db, entries) {
+    db.clear((db, entries) => {
       console.log("DB.cleared", db, entries);
     });
   }
 
   return {
     clear: function clear() {
-      db.clear(function (db, entries) {
+      db.clear((db, entries) => {
         console.log("DB.cleared", db, entries);
       });
     },
-    save: save,
-    get:  function (what) {return data[what]; },
-    set:  function (what, value) {data[what] = value; save(); },
-    init: function (onready) {
+    save,
+    get(what) {return data[what]; },
+    set(what, value) {data[what] = value; save(); },
+    init(onready) {
 
       self = this;
-      this.__defineGetter__('Data', function () { return data; });
+      this.__defineGetter__('Data', () => data);
 
-      asyncStorage.create(dbName, function (mydb) {
+      asyncStorage.create(dbName, mydb => {
         
         db = mydb;
 
-        load(function (dbData) {
+        load(dbData => {
           $.extend(true, data, defs);
           $.extend(true, data, dbData);
           data.stats.uses += 1;
@@ -97,6 +100,5 @@ var DB = (function () {
     }
 
   };
-
-})();
+}))();
 

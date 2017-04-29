@@ -8,7 +8,7 @@
  */
 
 Pixastic.Actions.edges3 = {
-	process : function(params) {
+	process(params) {
 
 		if (Pixastic.Client.hasCanvasImageData()) {
 
@@ -31,36 +31,39 @@ Pixastic.Actions.edges3 = {
 			var cL = params.options.cLow || [  0,   0,   0, 255];
 
 			for (var y = 1; y < hm1; ++y) {
+                // Prepare initial cached values for current row
+                var centerRow = pixel - 4;
+                var priorRow = centerRow - w4;
+                var nextRow = centerRow + w4;
 
-				// Prepare initial cached values for current row
-				var centerRow = pixel - 4;
-				var priorRow = centerRow - w4;
-				var nextRow = centerRow + w4;
-				
-				var r1 = - dataCopy[priorRow]   - dataCopy[centerRow]   - dataCopy[nextRow];
-				var g1 = - dataCopy[++priorRow] - dataCopy[++centerRow] - dataCopy[++nextRow];
-				var b1 = - dataCopy[++priorRow] - dataCopy[++centerRow] - dataCopy[++nextRow];
-				
-				var rp = dataCopy[priorRow += 2];
-				var gp = dataCopy[++priorRow];
-				var bp = dataCopy[++priorRow];
-				
-				var rc = dataCopy[centerRow += 2];
-				var gc = dataCopy[++centerRow];
-				var bc = dataCopy[++centerRow];
-				
-				var rn = dataCopy[nextRow += 2];
-				var gn = dataCopy[++nextRow];
-				var bn = dataCopy[++nextRow];
-				
-				var r2 = - rp - rc - rn;
-				var g2 = - gp - gc - gn;
-				var b2 = - bp - bc - bn;
+                var r1 = - dataCopy[priorRow]   - dataCopy[centerRow]   - dataCopy[nextRow];
+                var g1 = - dataCopy[++priorRow] - dataCopy[++centerRow] - dataCopy[++nextRow];
+                var b1 = - dataCopy[++priorRow] - dataCopy[++centerRow] - dataCopy[++nextRow];
 
-				var x, r, g, b, p;
-				
-				// Main convolution loop
-				for (x = 1; x < wm1; ++x) {
+                var rp = dataCopy[priorRow += 2];
+                var gp = dataCopy[++priorRow];
+                var bp = dataCopy[++priorRow];
+
+                var rc = dataCopy[centerRow += 2];
+                var gc = dataCopy[++centerRow];
+                var bc = dataCopy[++centerRow];
+
+                var rn = dataCopy[nextRow += 2];
+                var gn = dataCopy[++nextRow];
+                var bn = dataCopy[++nextRow];
+
+                var r2 = - rp - rc - rn;
+                var g2 = - gp - gc - gn;
+                var b2 = - bp - bc - bn;
+
+                var x;
+                var r;
+                var g;
+                var b;
+                var p;
+
+                // Main convolution loop
+                for (x = 1; x < wm1; ++x) {
 
 					centerRow = pixel + 4;
 					priorRow = centerRow - w4;
@@ -101,12 +104,12 @@ Pixastic.Actions.edges3 = {
 					pixel+=1;
 
 				}
-				pixel += 8;
-			}
+                pixel += 8;
+            }
 			return true;
 		}
 	},
-	checkSupport : function() {
+	checkSupport() {
 		// return Pixastic.Client.hasCanvasImageData();
 		return true;
 	}

@@ -22,9 +22,10 @@
  * ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 var StringUtils = {
-    readUTF16String: function(bytes, bigEndian, maxBytes) {
+    readUTF16String(bytes, bigEndian, maxBytes) {
         var ix = 0;
-        var offset1 = 1, offset2 = 0;
+        var offset1 = 1;
+        var offset2 = 0;
         maxBytes = Math.min(maxBytes||bytes.length, bytes.length);
 
         if( bytes[0] == 0xFE && bytes[1] == 0xFF ) {
@@ -61,7 +62,7 @@ var StringUtils = {
         string.bytesReadCount = ix;
         return string;
     },
-    readUTF8String: function(bytes, maxBytes) {
+    readUTF8String(bytes, maxBytes) {
         var ix = 0;
         maxBytes = Math.min(maxBytes||bytes.length, bytes.length);
 
@@ -98,7 +99,7 @@ var StringUtils = {
         string.bytesReadCount = ix;
         return string;
     },
-    readNullTerminatedString: function(bytes, maxBytes) {
+    readNullTerminatedString(bytes, maxBytes) {
         var arr = [];
         maxBytes = maxBytes || bytes.length;
         for ( var i = 0; i < maxBytes; ) {

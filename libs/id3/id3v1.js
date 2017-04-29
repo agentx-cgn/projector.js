@@ -7,7 +7,7 @@
  * Modified by António Afonso (antonio.afonso gmail.com)
  */
 
-(function(ns) {
+((ns => {
     var ID3v1 = ns.ID3v1 = {};
     var genres = [
     	"Blues","Classic Rock","Country","Dance","Disco","Funk","Grunge",
@@ -34,12 +34,12 @@
     	"Duet","Punk Rock","Drum Solo","Acapella","Euro-House","Dance Hall"
     ];
 
-    ID3v1.loadData = function(data, callback) {
+    ID3v1.loadData = (data, callback) => {
         var length = data.getLength();
         data.loadRange([length-128-1, length], callback);
     }
 
-    ID3v1.readTagsFromData = function(data) {
+    ID3v1.readTagsFromData = data => {
     	var offset = data.getLength() - 128;
     	var header = data.getStringAt(offset, 3);
     	if (header == "TAG") {
@@ -81,4 +81,4 @@
     
     // Export functions for closure compiler
     ns["ID3v1"] = ns.ID3v1;
-})(this);
+}))(this);

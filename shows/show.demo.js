@@ -41,7 +41,7 @@ Shows.demo = {
     Trans:    "0000"
   },
 
-  ranges: function(C){
+  ranges(C) {
     return {
       'v':  Color("4008", 8, "FEEF", 120, "A008", 56, "FEEF", 8,  "0000",  8, "A00F", 56, "FEEF"),
       'v1': Color("0000", 8, "FEEF", 120, "A008", 56, "FEEF", 8,  "0000",  8, "A00F", 56, "FEEF"),
@@ -57,7 +57,7 @@ Shows.demo = {
     };
   },
 
-  effects: function (F, R, C) { return { 
+  effects(F, R, C) { return { 
 
 // ---------------- Edit Effects below ----------------------------------------
 
@@ -150,16 +150,16 @@ Shows.demo = {
       // Menu
       Menu: new EFX.Text.List({
         list: [
-          {id: 0, color: "white", font: F.menu, line: "Menu", click: function(){this.curCompo = 1;}},
-          {id: 1, color: "white", font: F.menu, line: "Color Spiral", click: function(){this.curCompo = 2;}},
-          {id: 2, color: "white", font: F.menu, line: "Dot Symphony", click: function(){this.curCompo = 3;}},
-          {id: 3, color: "white", font: F.menu, line: "Flow of Frequences", click: function(){this.curCompo = 4;}},
-          {id: 4, color: "white", font: F.menu, line: "Flow of Frequences II", click: function(){this.curCompo = 5;}},
-          {id: 5, color: "white", font: F.menu, line: "Deconstruction", click: function(){this.curCompo = 5;}},
-          {id: 6, color: "white", font: F.menu, line: "Symbol Tower", click: function(){this.curCompo = 5;}},
-          {id: 7, color: "white", font: F.menu, line: "Jupiter's Eye", click: function(){this.curCompo = 5;}},
-          {id: 8, color: "white", font: F.menu, line: "Random Sense", click: function(){this.curCompo = 5;}},
-          {id: 9, color: "white", font: F.menu, line: "Time Machine", click: function(){this.curCompo = 5;}}
+          {id: 0, color: "white", font: F.menu, line: "Menu", click() {this.curCompo = 1;}},
+          {id: 1, color: "white", font: F.menu, line: "Color Spiral", click() {this.curCompo = 2;}},
+          {id: 2, color: "white", font: F.menu, line: "Dot Symphony", click() {this.curCompo = 3;}},
+          {id: 3, color: "white", font: F.menu, line: "Flow of Frequences", click() {this.curCompo = 4;}},
+          {id: 4, color: "white", font: F.menu, line: "Flow of Frequences II", click() {this.curCompo = 5;}},
+          {id: 5, color: "white", font: F.menu, line: "Deconstruction", click() {this.curCompo = 5;}},
+          {id: 6, color: "white", font: F.menu, line: "Symbol Tower", click() {this.curCompo = 5;}},
+          {id: 7, color: "white", font: F.menu, line: "Jupiter's Eye", click() {this.curCompo = 5;}},
+          {id: 8, color: "white", font: F.menu, line: "Random Sense", click() {this.curCompo = 5;}},
+          {id: 9, color: "white", font: F.menu, line: "Time Machine", click() {this.curCompo = 5;}}
         ]
       })
 
@@ -167,7 +167,7 @@ Shows.demo = {
 
     };},
 
-  compositions: function (E, F, R, C, D) { return {
+  compositions(E, F, R, C, D) { return {
 
 // ---------------- Edit Compositions below -----------------------------------
 

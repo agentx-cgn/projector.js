@@ -11,22 +11,16 @@ var BinaryFile = function(strData, iDataOffset, iDataLength) {
 	var dataOffset = iDataOffset || 0;
 	var dataLength = 0;
 
-	this.getRawData = function() {
-		return data;
-	}
+	this.getRawData = () => data
 
 	if (typeof strData == "string") {
 		dataLength = iDataLength || data.length;
 
-		this.getByteAt = function(iOffset) {
-			return data.charCodeAt(iOffset + dataOffset) & 0xFF;
-		}
+		this.getByteAt = iOffset => data.charCodeAt(iOffset + dataOffset) & 0xFF
 	} else if (typeof strData == "unknown") {
 		dataLength = iDataLength || IEBinary_getLength(data);
 
-		this.getByteAt = function(iOffset) {
-			return IEBinary_getByteAt(data, iOffset + dataOffset);
-		}
+		this.getByteAt = iOffset => IEBinary_getByteAt(data, iOffset + dataOffset)
 	}
     // @aadsm
     this.getBytesAt = function(iOffset, iLength) {
@@ -37,9 +31,7 @@ var BinaryFile = function(strData, iDataOffset, iDataLength) {
         return bytes;
     }
 
-	this.getLength = function() {
-		return dataLength;
-	}
+	this.getLength = () => dataLength
 
     // @aadsm
     this.isBitSetAt = function(iOffset, iBit) {
@@ -70,17 +62,17 @@ var BinaryFile = function(strData, iDataOffset, iDataLength) {
 			return iUShort;
 	}
 	this.getLongAt = function(iOffset, bBigEndian) {
-		var iByte1 = this.getByteAt(iOffset),
-			iByte2 = this.getByteAt(iOffset + 1),
-			iByte3 = this.getByteAt(iOffset + 2),
-			iByte4 = this.getByteAt(iOffset + 3);
+        var iByte1 = this.getByteAt(iOffset);
+        var iByte2 = this.getByteAt(iOffset + 1);
+        var iByte3 = this.getByteAt(iOffset + 2);
+        var iByte4 = this.getByteAt(iOffset + 3);
 
-		var iLong = bBigEndian ? 
+        var iLong = bBigEndian ? 
 			(((((iByte1 << 8) + iByte2) << 8) + iByte3) << 8) + iByte4
 			: (((((iByte4 << 8) + iByte3) << 8) + iByte2) << 8) + iByte1;
-		if (iLong < 0) iLong += 4294967296;
-		return iLong;
-	}
+        if (iLong < 0) iLong += 4294967296;
+        return iLong;
+    }
 	this.getSLongAt = function(iOffset, bBigEndian) {
 		var iULong = this.getLongAt(iOffset, bBigEndian);
 		if (iULong > 2147483647)
@@ -90,15 +82,15 @@ var BinaryFile = function(strData, iDataOffset, iDataLength) {
 	}
 	// @aadsm
 	this.getInteger24At = function(iOffset, bBigEndian) {
-        var iByte1 = this.getByteAt(iOffset),
-			iByte2 = this.getByteAt(iOffset + 1),
-			iByte3 = this.getByteAt(iOffset + 2);
+        var iByte1 = this.getByteAt(iOffset);
+        var iByte2 = this.getByteAt(iOffset + 1);
+        var iByte3 = this.getByteAt(iOffset + 2);
 
-		var iInteger = bBigEndian ? 
+        var iInteger = bBigEndian ? 
 			((((iByte1 << 8) + iByte2) << 8) + iByte3)
 			: ((((iByte3 << 8) + iByte2) << 8) + iByte1);
-		if (iInteger < 0) iInteger += 16777216;
-		return iInteger;
+        if (iInteger < 0) iInteger += 16777216;
+        return iInteger;
     }
 	this.getStringAt = function(iOffset, iLength) {
 		var aStr = [];
@@ -134,15 +126,13 @@ var BinaryFile = function(strData, iDataOffset, iDataLength) {
 	this.getCharAt = function(iOffset) {
 		return String.fromCharCode(this.getByteAt(iOffset));
 	}
-	this.toBase64 = function() {
-		return window.btoa(data);
-	}
-	this.fromBase64 = function(strBase64) {
+	this.toBase64 = () => window.btoa(data)
+	this.fromBase64 = strBase64 => {
 		data = window.atob(strBase64);
 	}
 }
 
-var BinaryAjax = (function() {
+var BinaryAjax = ((() => {
 
 	function createRequest() {
 		var oHTTP = null;
@@ -244,34 +234,35 @@ var BinaryAjax = (function() {
 		}
 	}
 
-	return function(strURL, fncCallback, fncError, aRange) {
+	return (strURL, fncCallback, fncError, aRange) => {
 
 		if (aRange) {
 			getHead(
 				strURL, 
-				function(oHTTP) {
-					var iLength = parseInt(oHTTP.getResponseHeader("Content-Length"),10) || -1;
-					var strAcceptRanges = oHTTP.getResponseHeader("Accept-Ranges");
+				oHTTP => {
+                    var iLength = parseInt(oHTTP.getResponseHeader("Content-Length"),10) || -1;
+                    var strAcceptRanges = oHTTP.getResponseHeader("Accept-Ranges");
 
-					var iStart, iEnd;
-					iStart = aRange[0];
-					if (aRange[0] < 0 ) 
+                    var iStart;
+                    var iEnd;
+                    iStart = aRange[0];
+                    if (aRange[0] < 0 ) 
 						iStart += iLength;
-					iEnd = iStart + aRange[1] - 1;
-					if( iStart >= 0 ) {
+                    iEnd = iStart + aRange[1] - 1;
+                    if( iStart >= 0 ) {
 					    sendRequest(strURL, fncCallback, fncError, [iStart, iEnd], (strAcceptRanges == "bytes"), iLength);
 					} else {
 					    sendRequest(strURL, fncCallback, fncError);
 					}
-				}
+                }
 			);
 
 		} else {
 			sendRequest(strURL, fncCallback, fncError);
 		}
-	}
+	};
 
-}());
+})());
 
 
 document.write(

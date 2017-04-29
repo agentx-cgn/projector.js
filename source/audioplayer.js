@@ -8,67 +8,69 @@
   // https://dvcs.w3.org/hg/audio/raw-file/tip/webaudio/webrtc-integration.html
   // http://code.google.com/p/chromium/issues/detail?id=112367
 
-var AudioPlayer = (function(){
+var AudioPlayer = ((() => {
+  var i;
+  var self;
+  var media = [];
+  var idx = null;
+  var hasLoaded = false;
+  var isEnabled = false;
+  var fps = 0;
+  var status = {};
 
-  var i, self, media = [], idx = null, hasLoaded = false, isEnabled = false, 
-      
-      fps = 0,
+  var // "mute, error, playing"
+  statusAudio = "mute";
 
-      status = {},
+  var timerMediaCheck;
+  var timerMediaTimeout = 5 * 1000;
+  var playerCounter = 0;
+  var player = null;
+  var playlist;
+  var trackinfo = ["n/a"];
+  var context;
+  var streamMicro;
+  var nodeSource;
+  var nodeSine;
+  var nodeGain;
+  var nodeDPCS;
+  var nodeAnalyser;
 
-      statusAudio = "mute", // "mute, error, playing"
+  var mapQuality = {
+    '0':    0, // off, 0 bands
+    '1':  128, // low
+    '2':  256, // good
+    '3':  512, // demanding
+    '4': 1024  // insane
+  };
 
-      timerMediaCheck,
-      timerMediaTimeout = 5 * 1000,
-      playerCounter = 0,
+  var bandsAnalyser = 256;
+  var arrayFrequency = [];
+  var arrayWaveform = [];
 
-      player = null,
-      playlist, 
-      trackinfo = ["n/a"],
+  var // seems to be the min value
+  bandsDPCS = 16;
 
-      context, 
-      streamMicro, 
-      nodeSource, 
-      nodeSine, 
-      nodeGain, 
-      nodeDPCS, 
-      nodeAnalyser, 
+  var dpcsSpectrum = 0;
+  var dpcsDynamic = 0;
+  var dpcsDynaBand = 0;
+  var dpcsVolume = 0;
+  var arrayDPCS = [];
+  var bufDPCS = [];
+  var bufVolume = createRingBuffer(fps);
+  var beatdetector = new BeatDetektor();
+  var bpm;
+  var bdtQuality;
+  var bdtJitter;
+  var bdtBeatCount;
+  var numErrors = 0;
+  var maxErrors = 20;
 
-      mapQuality = {
-        '0':    0, // off, 0 bands
-        '1':  128, // low
-        '2':  256, // good
-        '3':  512, // demanding
-        '4': 1024  // insane
-      },
-      bandsAnalyser = 256,
-      arrayFrequency = [],
-      arrayWaveform = [],
-
-      bandsDPCS = 16,    // seems to be the min value
-      dpcsSpectrum = 0,
-      dpcsDynamic = 0, 
-      dpcsDynaBand = 0,
-      dpcsVolume = 0,
-      arrayDPCS = [],
-      bufDPCS = [],
-      bufVolume = createRingBuffer(fps),
-
-      beatdetector = new BeatDetektor(),
-      bpm,
-      bdtQuality,
-      bdtJitter,
-      bdtBeatCount,
-
-      numErrors = 0,
-      maxErrors = 20;
-
-      for (i=0; i<bandsDPCS; i++) {
-        bufDPCS[i] = createRingBuffer(fps);
-      }
+  for (i=0; i<bandsDPCS; i++) {
+    bufDPCS[i] = createRingBuffer(fps);
+  }
 
 
-  function r (n, p){var e = Math.pow(10, p || 1); return ~~(n*e)/e;}
+  function r (n, p){var e = 10 ** (p || 1); return ~~(n*e)/e;}
 
   function eat (e){
     e.stopPropagation();
@@ -161,7 +163,8 @@ var AudioPlayer = (function(){
   }}
 
   function updateTrackInfo(src){
-    var data, len;
+    var data;
+    var len;
     if (src){
       data = src.split("/");
       len = data.length;
@@ -176,7 +179,8 @@ var AudioPlayer = (function(){
   }
 
   function fmtInfo(medium){
-    var s, m;
+    var s;
+    var m;
     if (!isEnabled){return "unsupported";}
     if(medium){
       s = parseInt(medium.audio.currentTime % 60, 10);
@@ -186,12 +190,12 @@ var AudioPlayer = (function(){
   }
 
   function traverseFileTree(collector, item, path) {
-
-    var i, dirReader;
+    var i;
+    var dirReader;
 
     path = path || "";
     if (item.isFile) {
-      item.file(function(file) {
+      item.file(file => {
         if (file.name.substr(-3) === "mp3"){
           collector.push(file);
           console.log("File:", path + file.name);
@@ -200,7 +204,7 @@ var AudioPlayer = (function(){
     } else if (item.isDirectory) {
       console.log("Folder:", item, path);
       dirReader = item.createReader();
-      dirReader.readEntries(function(entries) {
+      dirReader.readEntries(entries => {
         for (i=0; i<entries.length; i++) {
           traverseFileTree(collector, entries[i], path + item.name + "/");
         }
@@ -209,32 +213,32 @@ var AudioPlayer = (function(){
   }
 
   return {
-    boot: function(fps){
+    boot(fps) {
       self = this;
-      this.__defineGetter__('enabled',       function( ){return isEnabled;});
-      this.__defineGetter__('context',       function( ){return context;});
-      this.__defineGetter__('statusAudio',   function( ){return statusAudio;});
-      this.__defineGetter__('info',          function( ){return fmtInfo(media[idx]);});
-      this.__defineGetter__('trackInfo',     function( ){return trackinfo;});
-      this.__defineSetter__('volume',        function(v){setVolume(v);});
+      this.__defineGetter__('enabled',       () => isEnabled);
+      this.__defineGetter__('context',       () => context);
+      this.__defineGetter__('statusAudio',   () => statusAudio);
+      this.__defineGetter__('info',          () => fmtInfo(media[idx]));
+      this.__defineGetter__('trackInfo',     () => trackinfo);
+      this.__defineSetter__('volume',        v => {setVolume(v);});
 
-      this.__defineGetter__('dataDPCS',      function( ){return arrayDPCS;});
-      this.__defineGetter__('bandsDPCS',     function( ){return bandsDPCS;});
-      this.__defineGetter__('volume',        function( ){return dpcsVolume;});
-      this.__defineGetter__('avgvolume',     function( ){return bufVolume.avg();});
-      this.__defineGetter__('spectrum',      function( ){return dpcsSpectrum;});
-      this.__defineGetter__('dynaband',      function( ){return dpcsDynaBand;});
-      this.__defineGetter__('dynamic',       function( ){return dpcsDynamic;});
+      this.__defineGetter__('dataDPCS',      () => arrayDPCS);
+      this.__defineGetter__('bandsDPCS',     () => bandsDPCS);
+      this.__defineGetter__('volume',        () => dpcsVolume);
+      this.__defineGetter__('avgvolume',     () => bufVolume.avg());
+      this.__defineGetter__('spectrum',      () => dpcsSpectrum);
+      this.__defineGetter__('dynaband',      () => dpcsDynaBand);
+      this.__defineGetter__('dynamic',       () => dpcsDynamic);
 
-      this.__defineGetter__('bandsAnalyser', function( ){return bandsAnalyser;});
-      this.__defineGetter__('dataFrequency', function( ){return arrayFrequency;});
-      this.__defineGetter__('dataWaveform',  function( ){return arrayWaveform;});
-      this.__defineGetter__('BeatDetector',  function( ){return beatdetector;});
-      this.__defineGetter__('BeatCount',     function( ){return bdtBeatCount;});
+      this.__defineGetter__('bandsAnalyser', () => bandsAnalyser);
+      this.__defineGetter__('dataFrequency', () => arrayFrequency);
+      this.__defineGetter__('dataWaveform',  () => arrayWaveform);
+      this.__defineGetter__('BeatDetector',  () => beatdetector);
+      this.__defineGetter__('BeatCount',     () => bdtBeatCount);
       
       return self;
     },
-    init: function(){
+    init() {
 
       fps = Projector.fps;
       bandsAnalyser = mapQuality[Projector.audioquality] || 256;
@@ -242,11 +246,18 @@ var AudioPlayer = (function(){
       isEnabled = true;
       
     },
-    tick:  function(frame){
+    tick(frame) {
+      var i;
+      var vol = 0;
+      var len = bandsDPCS;
+      var dynMax = 0;
 
-      var i, vol = 0, len = bandsDPCS, 
-          dynMax = 0, dynMin = 0, // band = 0, 
-          maxDif = 0, minMin, maxMax;
+      var // band = 0, 
+      dynMin = 0;
+
+      var maxDif = 0;
+      var minMin;
+      var maxMax;
 
       if (nodeAnalyser){
 
@@ -296,9 +307,8 @@ var AudioPlayer = (function(){
           // console.log(dynMin, dynMax, maxDif, dpcsDynaBand, arrayDPCS[dpcsDynaBand], arrayDPCS);
         }
       }
-
     },
-    tickBeat: function(){
+    tickBeat() {
       // if (context.activeSourceCount){
         beatdetector.process(window.performance.now()/1000, arrayFrequency);
         bpm =           beatdetector.win_bpm_int/10;
@@ -308,7 +318,7 @@ var AudioPlayer = (function(){
       // }
     },
 
-    switchQuality: function(index){
+    switchQuality(index) {
 
       if (mapQuality[index] && isEnabled){
         bandsAnalyser = mapQuality[index];
@@ -320,7 +330,7 @@ var AudioPlayer = (function(){
       }
 
     },
-    start: function(settings){
+    start(settings) {
 
       var src = settings.source;
 
@@ -333,13 +343,13 @@ var AudioPlayer = (function(){
       else {console.log("AP.start: unknown source", src);}
 
     },  
-    next: function(){
+    next() {
       if (playlist) {
         self.switchAudio("mute");
         self.switchAudio("files", playlist);
       }
     },
-    switchAudio: function(source, data){
+    switchAudio(source, data) {
 
       // console.log("AP.selectAudio.in:", source, data);
 
@@ -382,8 +392,8 @@ var AudioPlayer = (function(){
             // nodeSource = context.createMediaStreamSource(streamMicro);
             updateContext(streamMicro);
           } else {
-            navigator.getUserMedia({audio: true, toString : function() {return "audio";}},
-              function(streamMicro) {
+            navigator.getUserMedia({audio: true, toString() {return "audio";}},
+              streamMicro => {
 
                 nodeSource = context.createMediaStreamSource(streamMicro);
                 updateContext(nodeSource);
@@ -403,7 +413,7 @@ var AudioPlayer = (function(){
 
                 // onready();
               },
-              function(e){
+              e => {
                 // onready({event:e, message:"Could not load medium: " + medium.stream});
               }
             );
@@ -436,7 +446,7 @@ var AudioPlayer = (function(){
           file = data[parseInt(Math.random() * data.length, 10)];
           playlist = data;
 
-          timerMediaCheck = setTimeout(function(){
+          timerMediaCheck = setTimeout(() => {
             console.log("MediaTimeout");
           }, timerMediaTimeout);
 
@@ -496,10 +506,11 @@ var AudioPlayer = (function(){
       }
 
     },
-    activate: function(framePerSeconds){
-
-      var source, option = "", files = [],
-          curSettings = H.clone(DB.get("audio"));
+    activate(framePerSeconds) {
+      var source;
+      var option = "";
+      var files = [];
+      var curSettings = H.clone(DB.get("audio"));
 
       status.volume = curSettings.volume;
 
@@ -538,22 +549,22 @@ var AudioPlayer = (function(){
 
       $('#audioselector').bind({
         
-        dragover: function (e) {
+        dragover(e) {
             $(".background").addClass('hover');
             return eat(e);
         },
-        dragend: function (e) {
+        dragend(e) {
             $(".background").removeClass('hover');
             return eat(e);
         },
-        dragleave: function (e) {
+        dragleave(e) {
             $(".background").removeClass('hover');
             return eat(e);
         },
-        drop: function (e) {
-
-          var files, file = e.dataTransfer.files[0],
-              reader = new window.FileReader();
+        drop(e) {
+          var files;
+          var file = e.dataTransfer.files[0];
+          var reader = new window.FileReader();
 
           $(".background").removeClass('hover');
           e.preventDefault();
@@ -562,7 +573,7 @@ var AudioPlayer = (function(){
             files = this.result.split("\n");
             console.log("AP.playlist", files.length);
           };
-          reader.onerror = function(e){
+          reader.onerror = e => {
             console.log("AP.reader", e, file.name);
           };
           reader.readAsText(file);
@@ -576,15 +587,17 @@ var AudioPlayer = (function(){
           // }
           // self.switchAudio("files", files);
         },
-        paste: function(e){
+        paste(e) {
 
         }
 
       });
-      
+
       function processSelection(files){
-        
-        var i, file, len = files.length, data = [];
+        var i;
+        var file;
+        var len = files.length;
+        var data = [];
 
         for (i=0; i<len; i++) {
           file = files[i];
@@ -605,13 +618,12 @@ var AudioPlayer = (function(){
         $('#audioselector input[type="radio"]').removeAttr("checked");
         $("#txtSelected").text(data.length + " files loaded");
         if(data.length){self.switchAudio("files", data);}
-
       }
       // select local mp3 files
-      $('#ap_choosefiles').on('click', function() {
+      $('#ap_choosefiles').on('click', () => {
         document.getElementById("ap_selectFiles").click();
       });
-      $('#ap_choosefolders').on('click', function() {
+      $('#ap_choosefolders').on('click', () => {
         document.getElementById("ap_selectFolders").click();
       });
       $('#ap_selectFiles').change(function() {
@@ -640,7 +652,7 @@ var AudioPlayer = (function(){
         else {console.log("AP.activate: don't know source:", source);}
       });
 
-      $('#ap_streamurl').keypress(function (e) {
+      $('#ap_streamurl').keypress(e => {
         if (e.which === 13) {
           curSettings.source = "stream";
           curSettings.stream = $('#ap_streamurl').val();
@@ -649,28 +661,26 @@ var AudioPlayer = (function(){
         }
       });
 
-      $('#ap_remember').on("change", function(e){
-        var val = $('#ap_remember').attr('checked') ? true : false,
-            audio = DB.get("audio");
+      $('#ap_remember').on("change", e => {
+        var val = $('#ap_remember').attr('checked') ? true : false;
+        var audio = DB.get("audio");
         audio.remember = val;
         curSettings.remember = val;
         DB.set("audio", audio);
       });
 
-      $('#ap_volume').on("change", function(e){
+      $('#ap_volume').on("change", e => {
         var volume = parseInt($("#ap_volume").val(), 10);
         $("#txtVolume").text(volume + "%");
         status.volume = volume;
         setVolume(volume);
       });
 
-      $('#ap_hide').on("click", function(e){
+      $('#ap_hide').on("click", e => {
         if ($('#ap_remember').attr('checked')){DB.set("audio", curSettings);}
         Projector.toggleAudio();
       });
-
     }
 
   }; // end return
-
-})().boot();
+}))().boot();

@@ -1,19 +1,23 @@
 
 
-var Hotspots = (function(){
+var Hotspots = ((() => {
   var spots = [];
   return {
-    deb: function(){
-      var spot, i = spots.length, 
-          msgs = "\n  Hotspots (" + spots.length + ") :";
+    deb() {
+      var spot;
+      var i = spots.length;
+      var msgs = "\n  Hotspots (" + spots.length + ") :";
       while (i--){
          // msgs += "\n    " + JSON.stringify(spots[i]); cyclic
       }
       return msgs;
     },
-    add:     function(spot){ spots.push(spot);},
-    resize:  function(mouse){
-      var spot, lefttop, w, h;
+    add(spot) { spots.push(spot);},
+    resize(mouse) {
+      var spot;
+      var lefttop;
+      var w;
+      var h;
       for (spot in spots){
         lefttop = spot.resize();
         w = spot.x2 - spot.x1;
@@ -25,8 +29,10 @@ var Hotspots = (function(){
         spot.hover = false;
       }
     },
-    execute: function(mouse){
-      var spot, hit = false, i = spots.length;
+    execute(mouse) {
+      var spot;
+      var hit = false;
+      var i = spots.length;
       while (i--){
         spot = spots[i];
         if (spot.enabled){
@@ -40,8 +46,9 @@ var Hotspots = (function(){
         }
       }
     },
-    leaveAll: function(event){
-      var spot, i = spots.length;
+    leaveAll(event) {
+      var spot;
+      var i = spots.length;
       while (i--){
         spot = spots[i];
         spot.hover = false; 
@@ -50,7 +57,7 @@ var Hotspots = (function(){
     }
   };
 
-})();
+}))();
 
 function Button(cfg){
   this.padding = 2;

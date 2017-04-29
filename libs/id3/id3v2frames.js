@@ -2,7 +2,7 @@
  * Copyright (c) 2009 Opera Software ASA, António Afonso (antonio.afonso@opera.com)
  * Modified by António Afonso <antonio.afonso gmail.com>
  */
-(function() {
+((() => {
     var pictureType = [
         "32x32 pixels 'file icon' (PNG only)",
         "Other file icon",
@@ -52,15 +52,15 @@
     
     function getTime( duration )
     {
-        var duration    = duration/1000,
-            seconds     = Math.floor( duration ) % 60,
-            minutes     = Math.floor( duration/60 ) % 60,
-            hours       = Math.floor( duration/3600 );
-            
+        var duration    = duration/1000;
+        var seconds     = Math.floor( duration ) % 60;
+        var minutes     = Math.floor( duration/60 ) % 60;
+        var hours       = Math.floor( duration/3600 );
+
         return {
-            seconds : seconds,
-            minutes : minutes,
-            hours   : hours
+            seconds,
+            minutes,
+            hours
         };
     }
     
@@ -113,7 +113,7 @@
         var text = data.getStringWithCharsetAt( offset, (start+length) - offset, charset );
         
         return {
-            language : language,
+            language,
             short_description : shortdesc.toString(),
             text : text.toString()
         };
@@ -121,9 +121,7 @@
     
     ID3v2.readFrameData['COM'] = ID3v2.readFrameData['COMM'];
     
-    ID3v2.readFrameData['PIC'] = function(offset, length, data, flags) {
-        return ID3v2.readFrameData['APIC'](offset, length, data, flags, '2');
-    };
+    ID3v2.readFrameData['PIC'] = (offset, length, data, flags) => ID3v2.readFrameData['APIC'](offset, length, data, flags, '2');
     
     ID3v2.readFrameData['PCNT'] = function readCounterFrame(offset, length, data) {
         // FIXME: implement the rest of the spec
@@ -164,11 +162,11 @@
         var lyrics = data.getStringWithCharsetAt( offset, (start+length) - offset, charset );
         
         return {
-            language : language,
+            language,
             descriptor : descriptor.toString(),
             lyrics : lyrics.toString()
         };
     };
     
     ID3v2.readFrameData['ULT'] = ID3v2.readFrameData['USLT'];
-})();
+}))();

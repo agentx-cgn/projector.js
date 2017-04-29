@@ -16,8 +16,10 @@ EFX.Time.Delay.prototype = new Filter();
 EFX.Time.Delay.constructor = EFX.Time.Delay;
 EFX.Time.Delay.prototype.resize = new Function(); 
 EFX.Time.Delay.prototype.load = function(onloaded){
-
-  var i, cvs, ctx, hidden = document.getElementById("hidden");
+  var i;
+  var cvs;
+  var ctx;
+  var hidden = document.getElementById("hidden");
 
   this.width  = this.width  || "320";
   this.height = this.height || "240";
@@ -26,7 +28,7 @@ EFX.Time.Delay.prototype.load = function(onloaded){
   this.delay    = this.delay * this.projector.fps || this.projector.fps;
   this.ops.off  = this.off      || 0;
 
-  this.buffer = []; 
+  this.buffer = [];
   this.pointer = 0;
   this.lastPointer = 0;
 
@@ -54,7 +56,6 @@ EFX.Time.Delay.prototype.load = function(onloaded){
   this.ctx = this.buffer[this.lastPointer].getContext("2d");
   TIM.step(" OK Delay", this.delay * ~~this.width * ~~this.height * 32 / 1024 / 1024 + " MB");
   onloaded();
-
 };
 
 // makes this work on beforeDraw respecting ops.off
@@ -95,29 +96,27 @@ EFX.Time.Blend.Color.prototype.load = function(onloaded){
 };
 // make this before Render
 EFX.Time.Blend.Color.prototype.afterRender = function(ops){
-
   // DO NOT TOUCH THIS
 
-  var ctx = this.ctx, 
-      ops = this.lastOps,
-      pw  = this.parent.source.width,
-      ph  = this.parent.source.height,
-      cx  = ops.l * pw,
-      cy  = ops.t * ph,
+  var ctx = this.ctx;
 
-      sw  = this.source.width,
-      sh  = this.source.height,
-      sl  = cx -sw/2,
-      st  = cy -sh/2,
+  var ops = this.lastOps;
+  var pw  = this.parent.source.width;
+  var ph  = this.parent.source.height;
+  var cx  = ops.l * pw;
+  var cy  = ops.t * ph;
+  var sw  = this.source.width;
+  var sh  = this.source.height;
+  var sl  = cx -sw/2;
+  var st  = cy -sh/2;
+  var tl  = -sw/2;
+  var tt  = -sh/2;
+  var tw  = sw;
+  var th  = sh;
 
-      tl  = -sw/2,
-      tt  = -sh/2,
-      tw  = sw,
-      th  = sh;
 
-  
-  ctx.globalAlpha = 1;          
-  ctx.globalCompositeOperation = "copy";  
+  ctx.globalAlpha = 1;
+  ctx.globalCompositeOperation = "copy";
   ctx.setTransform(1, 0, 0, 1, 0, 0);
   ctx.translate(sw/2, sh/2);
 
@@ -125,12 +124,11 @@ EFX.Time.Blend.Color.prototype.afterRender = function(ops){
     ctx.translate(ops.dx, ops.dy);}
 
   if (ops.sx !== 1 || ops.sy !== 1) {
-    ctx.scale(ops.sx, ops.sy);}  
+    ctx.scale(ops.sx, ops.sy);}
 
   ctx.drawImage(this.parent.source, sl, st, sw, sh, tl, tt, tw, th);
 
   this.lastInfo = [sl, st, sw, sh, tl, tt, tw, th];
-
 };
 
 
@@ -194,27 +192,28 @@ EFX.Time.Blend.Alpha.prototype.resize = function(){
   this.resizeToParent([this.source, this.cvs0, this.cvs1, this.cvs2]);
 };
 EFX.Time.Blend.Alpha.prototype.beforeDraw = function(ops){
-
   // DO NOT TOUCH THIS
 
-  var ctx,
-      // ops = this.lastOps,
-      pw  = this.parent.source.width,
-      ph  = this.parent.source.height,
-      // cx  = this.lastOps.l * pw,
-      // cy  = this.lastOps.t * ph,
-      cx  = ops.l * pw,
-      cy  = ops.t * ph,
+  var ctx;
 
-      sw  = this.source.width,
-      sh  = this.source.height,
-      sl  = cx -sw/2,
-      st  = cy -sh/2,
+  var // ops = this.lastOps,
+  pw  = this.parent.source.width;
 
-      tl  = -sw/2,
-      tt  = -sh/2,
-      tw  = sw,
-      th  = sh;
+  var ph  = this.parent.source.height;
+
+  var // cx  = this.lastOps.l * pw,
+  // cy  = this.lastOps.t * ph,
+  cx  = ops.l * pw;
+
+  var cy  = ops.t * ph;
+  var sw  = this.source.width;
+  var sh  = this.source.height;
+  var sl  = cx -sw/2;
+  var st  = cy -sh/2;
+  var tl  = -sw/2;
+  var tt  = -sh/2;
+  var tw  = sw;
+  var th  = sh;
 
   if (this.last === this.cvs1){
     ctx = this.ctx2;
@@ -238,20 +237,19 @@ EFX.Time.Blend.Alpha.prototype.beforeDraw = function(ops){
     ctx.translate(ops.dx, ops.dy);}
 
   if (ops.sx !== 1 || ops.sy !== 1) {
-    ctx.scale(ops.sx, ops.sy);}  
+    ctx.scale(ops.sx, ops.sy);}
 
   ctx.drawImage(this.next, sl, st, sw, sh, tl, tt, tw, th);
-  
+
   //stuff from child unchanged 
   ctx.globalAlpha = 1;
   ctx.setTransform(1, 0, 0, 1, 0, 0);
   ctx.globalCompositeOperation = "source-over";  // no copy here
   ctx.drawImage(this.source, 0, 0, sw, sh);
-  
+
   this.ctx = ctx;
   this.source = ctx.canvas;
   this.lastInfo = [sl, st, sw, sh, tl, tt, tw, th];
-
 };
 EFX.Time.Blend.Alpha.prototype.beforeRender = function(){
   this.source = this.cvs0;

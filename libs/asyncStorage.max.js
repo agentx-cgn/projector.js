@@ -4,7 +4,8 @@
 */
 /**@license (C) Andrea Giammarchi, @WebReflection - Mit Style License
 */
-(function (asyncStorage, window) {"use strict";
+(((asyncStorage, window) => {
+  "use strict";
 
   if (asyncStorage in window) return;
 
@@ -13,7 +14,7 @@
     window.create = create;
     window = global;
   } else {
-    window[asyncStorage] = {create: create};
+    window[asyncStorage] = {create};
   }
 
   // exported function
@@ -22,65 +23,83 @@
   }
 
   // utility
-  function concat() {
-    return "".concat.apply("", arguments);
+  function concat(...args) {
+    return "".concat(...args);
   }
 
-  function nothingToDoHere() {
+  function nothingToDoHere(...args) {
     //^ for debug only
-    console.log("[ERROR]", arguments);
+    console.log("[ERROR]", args);
     //$
   }
 
-  var
-    // fast + ad-hoc + easy polyfills
-    bind                  = create.bind || function (self) {
-                            var
-                              callback = this,
-                              args = [].slice.call(arguments, 1)
-                            ;
-                            return function () {
-                              return callback.apply(self, args.concat.apply(args, arguments));
-                            };
-                          },
-    indexOf               = [].indexOf || function (value) {
-                            for (var i = this.length; i-- && this[i] !== value;);
-                            return i;
-                          },
-    setTimeout            = window.setTimeout,
-    // strings shortcuts
-    EOF                   = "\x00",
-    ndexedDB              = "ndexedDB",
-    openDatabase          = "openDatabase",
-    executeSql            = "executeSql",
-    transaction           = "transaction",
-    readTransaction       = "readTransaction",
-    localStorage          = "localStorage",
-    prototype             = "prototype",
-    unobtrusiveTableName  = asyncStorage + "_data",
-    keyFieldName          = asyncStorage + "_key",
-    valueFieldName        = asyncStorage + "_value",
-    $keys                 = "_keys",
-    $length               = "length",
-    $key                  = "key",
-    $getItem              = "getItem",
-    $setItem              = "setItem",
-    $removeItem           = "removeItem",
-    $clear                = "clear",
-    // original IndexedDB ... unfortunately it's not usable right now as favorite choice, actually dropped later on
-    indexedDB             = window["i" + ndexedDB] ||
-                            window["webkitI" + ndexedDB] ||
-                            window["mozI" + ndexedDB] ||
-                            window["msI" + ndexedDB],
-    // other shortcuts
-    NULL                  = null,
-    max                   = window.Math.max,
-    // lazily assigned variables
-    AsynchronousStorage, asPrototype,
-    prepareTable, readLength, checkLength, setLength,
-    prepareUpdate, checkIfPresent, clearAllItems, clearOneItem,
-    onUpdateComplete, onCheckComplete, onGetComplete, onItemsCleared, onItemCleared
-  ;
+  var // fast + ad-hoc + easy polyfills
+  bind                  = create.bind || function (self) {
+                          var
+                            callback = this,
+                            args = [].slice.call(arguments, 1)
+                          ;
+                          return function () {
+                            return callback.apply(self, args.concat(...arguments));
+                          };
+                        };
+
+  var indexOf               = [].indexOf || function (value) {
+                          for (var i = this.length; i-- && this[i] !== value;);
+                          return i;
+                        };
+
+  var setTimeout            = window.setTimeout;
+
+  var // strings shortcuts
+  EOF                   = "\x00";
+
+  var ndexedDB              = "ndexedDB";
+  var openDatabase          = "openDatabase";
+  var executeSql            = "executeSql";
+  var transaction           = "transaction";
+  var readTransaction       = "readTransaction";
+  var localStorage          = "localStorage";
+  var prototype             = "prototype";
+  var unobtrusiveTableName  = asyncStorage + "_data";
+  var keyFieldName          = asyncStorage + "_key";
+  var valueFieldName        = asyncStorage + "_value";
+  var $keys                 = "_keys";
+  var $length               = "length";
+  var $key                  = "key";
+  var $getItem              = "getItem";
+  var $setItem              = "setItem";
+  var $removeItem           = "removeItem";
+  var $clear                = "clear";
+
+  var // original IndexedDB ... unfortunately it's not usable right now as favorite choice, actually dropped later on
+  indexedDB             = window["i" + ndexedDB] ||
+                          window["webkitI" + ndexedDB] ||
+                          window["mozI" + ndexedDB] ||
+                          window["msI" + ndexedDB];
+
+  var // other shortcuts
+  NULL                  = null;
+
+  var max                   = window.Math.max;
+
+  var // lazily assigned variables
+  AsynchronousStorage;
+
+  var asPrototype;
+  var prepareTable;
+  var readLength;
+  var checkLength;
+  var setLength;
+  var prepareUpdate;
+  var checkIfPresent;
+  var clearAllItems;
+  var clearOneItem;
+  var onUpdateComplete;
+  var onCheckComplete;
+  var onGetComplete;
+  var onItemsCleared;
+  var onItemCleared;
 
   // the circus ... hopefully a bloody fallback will always be available
   if (openDatabase in window) {
@@ -253,10 +272,8 @@
     AsynchronousStorage = // IndexedDB version
     function AsynchronousStorage(name, callback, errorback) {
       try {
-        var
-          self = this,
-          db = indexedDB.open(self.name = name, 1)
-        ;
+        var self = this;
+        var db = indexedDB.open(self.name = name, 1);
         self.type = "IndexedDB";
         db[readTransaction]("upgradeneeded", prepareTable, !1);
         db[readTransaction](executeSql, bind.call(readLength, self, callback), !1);
@@ -270,7 +287,7 @@
     ndexedDB = "error";
     readTransaction = "addEventListener";
 
-    prepareTable = function (event) {
+    prepareTable = event => {
       event.target.result.createObjectStore(
         unobtrusiveTableName, {
           keyPath: keyFieldName,
@@ -294,10 +311,8 @@
     };
 
     checkLength = function (callback, event) {
-      var
-        self = this,
-        cursor = event.target.result
-      ;
+      var self = this;
+      var cursor = event.target.result;
       if (cursor) {
         self[$keys].push(cursor.key);
         cursor["continue"]();
@@ -306,9 +321,7 @@
       }
     };
 
-    setLength = function (self) {
-      return self[$length] = self[$keys][$length];
-    };
+    setLength = self => self[$length] = self[$keys][$length];
 
     onCheckComplete = function (key, callback, event) {
       var result = event.target.result;
@@ -316,30 +329,24 @@
     };
 
     onUpdateComplete = function (key, value, callback, event) {
-      var
-        self = this,
-        i = indexOf.call(self[$keys], key)
-      ;
+      var self = this;
+      var i = indexOf.call(self[$keys], key);
       ~i || self[$keys].push(key);
       setLength(self);
       callback.call(self, value, key, self);
     };
 
-    onGetComplete = function (self, write) {
-      var
-        db = self._db,
-        t = db[transaction]
-      ;
+    onGetComplete = (self, write) => {
+      var db = self._db;
+      var t = db[transaction];
       return t.apply(db, [unobtrusiveTableName].concat(write ? "readwrite" : [])).objectStore(
         unobtrusiveTableName
       );
     };
 
     onItemCleared = function (key, callback, event) {
-      var
-        self = this,
-        i = indexOf.call(self[$keys], key)
-      ;
+      var self = this;
+      var i = indexOf.call(self[$keys], key);
       ~i && self[$keys].splice(i, 1);
       setLength(self);
       callback.call(self, key, self);
@@ -376,7 +383,8 @@
       op[readTransaction](ndexedDB, bind.call(errorback || nothingToDoHere, this), !1);
     };
     asPrototype[$setItem] = function setItem(key, value, callback, errorback) {
-      var data = {}, op;
+      var data = {};
+      var op;
       data[keyFieldName] = key;
       data[valueFieldName] = value;
       op = onGetComplete(this, 1).put(data);
@@ -416,12 +424,10 @@
     };
 
     clearOneItem = function (key, callback, errorback) {
-      var
-        self = this,
-        keys = self[$keys],
-        db_key = self._prefix + key,
-        i = indexOf.call(keys, db_key)
-      ;
+      var self = this;
+      var keys = self[$keys];
+      var db_key = self._prefix + key;
+      var i = indexOf.call(keys, db_key);
       if (~i) {
         keys.splice(i, 1);
         self._db[$removeItem](db_key);
@@ -442,10 +448,8 @@
     };
 
     prepareUpdate = function (key, value, callback, errorback) {
-      var
-        self = this,
-        db_key = self._prefix + key
-      ;
+      var self = this;
+      var db_key = self._prefix + key;
       try {
         self._db[$setItem](db_key, value);
         if (!~indexOf.call(self[$keys], db_key)) {
@@ -457,7 +461,7 @@
       }
     };
 
-    readLength = function (self) {
+    readLength = self => {
       if (self._db[$length] < self[$keys][$length]) {
         throw "unobtrusive attempt to manipulate the localStorage";
       }
@@ -512,7 +516,7 @@
       self[$length] = l;
     };
 
-    readLength = function (self) {
+    readLength = self => {
       // no idea how to properly prevent other libraries to erase AsynchronousStorage cookies
       // ... oh, well, better than nothing I guess
       if (self._db.cookie[$length] < self[$keys].join(";")[$length]) {
@@ -522,13 +526,11 @@
     };
 
     clearOneItem = function (key, callback, errorback) {
-      var
-        self = this,
-        keys = self[$keys],
-        unescapedKey = self._prefix + key,
-        db_key = escape(unescapedKey),
-        i = self._db.cookie.indexOf(db_key)
-      ;
+      var self = this;
+      var keys = self[$keys];
+      var unescapedKey = self._prefix + key;
+      var db_key = escape(unescapedKey);
+      var i = self._db.cookie.indexOf(db_key);
       if (~i) {
         self._db.cookie = db_key + "=;expires=Thu, 01-Jan-1970 00:00:01 GMT";
         i = indexOf.call(keys, unescapedKey);
@@ -548,14 +550,12 @@
     };
 
     checkIfPresent = function (key, callback, errorback) {
-      var
-        self = this,
-        db = self._db.cookie,
-        db_key = escape(self._prefix + key),
-        cl = db.indexOf(db_key + '=') + db_key[$length],
-        result = NULL,
-        ce
-      ;
+      var self = this;
+      var db = self._db.cookie;
+      var db_key = escape(self._prefix + key);
+      var cl = db.indexOf(db_key + '=') + db_key[$length];
+      var result = NULL;
+      var ce;
       if (++cl > db_key[$length]) {
         ce = db.indexOf(';', cl);
         ce < 0 && (ce = db[$length]);
@@ -565,12 +565,10 @@
     };
 
     prepareUpdate = function (key, value, callback, errorback) {
-      var
-        self = this,
-        db = self._db.cookie,
-        db_key = self._prefix + key,
-        escapedKey = escape(db_key)
-      ;
+      var self = this;
+      var db = self._db.cookie;
+      var db_key = self._prefix + key;
+      var escapedKey = escape(db_key);
       if (!~db.indexOf(escapedKey)) {
         self[$length] = self[$keys].push(db_key);
       }
@@ -599,6 +597,5 @@
       setTimeout(bind.call(prepareUpdate, readLength(this), key, value, callback || nothingToDoHere, errorback || nothingToDoHere), 0);
     };
   }
-
-}("asyncStorage", this));
+})("asyncStorage", this));
 // var db = asyncStorage.create("db", function () {console.log(arguments)});

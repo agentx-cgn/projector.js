@@ -1,16 +1,22 @@
 // Modified version of http://www.webtoolkit.info/javascript-base64.html
-(function(ns) {
+((ns => {
     ns.Base64 = {
     	// private property
     	_keyStr : "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/=",
 
     	// public method for encoding
-    	encodeBytes : function (input) {
-    		var output = "";
-    		var chr1, chr2, chr3, enc1, enc2, enc3, enc4;
-    		var i = 0;
+    	encodeBytes(input) {
+            var output = "";
+            var chr1;
+            var chr2;
+            var chr3;
+            var enc1;
+            var enc2;
+            var enc3;
+            var enc4;
+            var i = 0;
 
-    		while (i < input.length) {
+            while (i < input.length) {
 
     			chr1 = input[i++];
     			chr2 = input[i++];
@@ -33,11 +39,11 @@
 
     		}
 
-    		return output;
-    	}
+            return output;
+        }
     };
     
     // Export functions for closure compiler
     ns["Base64"] = ns.Base64;
     ns.Base64["encodeBytes"] = ns.Base64.encodeBytes;
-})(this);
+}))(this);
