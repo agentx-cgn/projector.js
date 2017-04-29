@@ -16,8 +16,8 @@ EFX.Text.List = function(cfg){Filter.apply(this, [cfg]);};
 EFX.Text.List.prototype = new Filter();
 EFX.Text.List.constructor = EFX.Text.List;
 EFX.Text.List.prototype.load = function(onloaded){
-
-  var i, cvs;
+  var i;
+  var cvs;
 
   this.ops.id = 0;
   this.ops.a  = 1;
@@ -39,11 +39,15 @@ EFX.Text.List.prototype.load = function(onloaded){
   }
 
   onloaded();
-
 };
 EFX.Text.List.prototype.resize = function(){
-
-  var i, ctx, cvs, height, line, textWidth, list = this.list;
+  var i;
+  var ctx;
+  var cvs;
+  var height;
+  var line;
+  var textWidth;
+  var list = this.list;
 
   for (i=0; i<list.length; i++) {
 
@@ -67,8 +71,6 @@ EFX.Text.List.prototype.resize = function(){
       
     }
   }
-
-
 };
 EFX.Text.List.prototype.beforeDraw = function(ops){
   if (ops.id < this.sources.length){
@@ -98,16 +100,16 @@ EFX.Text.Menu.constructor = EFX.Text.Menu;
 //   this.rect = [this.left, this.top, this.width, this.height];
 // };
 EFX.Text.Menu.prototype.load = function(onloaded){
-
-  var i = 0, lh = this.lineHeight, 
-      lines = this.projector.menu.length,
-      menu  = this.projector.menu,
-      top   = 0,
-      left  = 0,
-      width = 0,
-      height = 0,
-      ctx = this.ctx,
-      padding = 2;
+  var i = 0;
+  var lh = this.lineHeight;
+  var lines = this.projector.menu.length;
+  var menu  = this.projector.menu;
+  var top   = 0;
+  var left  = 0;
+  var width = 0;
+  var height = 0;
+  var ctx = this.ctx;
+  var padding = 2;
 
   ctx.font = this.font;
 
@@ -129,10 +131,10 @@ EFX.Text.Menu.prototype.load = function(onloaded){
   ctx.font = this.font;
   ctx.textBaseline = "top";
 
-  i = 0; lines = this.projector.menu.length;
+  i = 0;lines = this.projector.menu.length;
   top = padding;
   left = padding;
-  
+
   while (lines--){
     ctx.fillText(i + ":  " + menu[i], left, top);
     top += lh; i += 1;
@@ -208,9 +210,8 @@ EFX.Text.RandomWords = function (cfg){Filter.apply(this, [cfg]);};
 EFX.Text.RandomWords.prototype = new Filter();
 EFX.Text.RandomWords.constructor = EFX.Text.RandomWords;
 EFX.Text.RandomWords.prototype.load = function(onloaded){
-  
-  var self = this,
-      req = new XMLHttpRequest();
+  var self = this;
+  var req = new XMLHttpRequest();
 
   this.data = "data/words.js";
   this.lastWordFrame = 0;
@@ -230,7 +231,7 @@ EFX.Text.RandomWords.prototype.load = function(onloaded){
   // load sync
   this.words = this.loadWords();
   this.word = "...";
-  this.renderWord();      
+  this.renderWord();
   onloaded();
 
   // load async
@@ -255,7 +256,6 @@ EFX.Text.RandomWords.prototype.load = function(onloaded){
   // };
 
   // req.send();
-
 };
 
 EFX.Text.RandomWords.prototype.renderWord = function(ops){
@@ -294,7 +294,7 @@ EFX.Text.RandomWords.prototype.beforeDraw = function(ops){
       this.ctx.clearRect(0, 0, this.source.width, this.source.height);
     }
 
-    idx = parseInt(Math.pow(10, Math.random() * 4), 10);
+    idx = parseInt(10 ** (Math.random() * 4), 10);
     idx = Math.min(this.words.length -1, idx);
     this.word = this.words[idx];
     this.renderWord(ops);

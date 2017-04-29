@@ -1,6 +1,6 @@
 
 
-EFX.Text.RandomWords.prototype.loadWords = function(){
+EFX.Text.RandomWords.prototype.loadWords = () => {
 
   // source: http://corpora.informatik.uni-leipzig.de/
 

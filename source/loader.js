@@ -2,29 +2,31 @@
 /*globals $, H, DPCS, Editor, FileError, TIM, Projector, AudioContext, AudioPlayer, Playlists, async, DB, JSLINT, requestAnimationFrame */
 
 
-var Loader = (function(){
-  
-  var self, errorCounter = 0, 
+var Loader = ((() => {
+  var self;
+  var errorCounter = 0;
+  var doParse = false;
+  var filesystem;
 
-  doParse = false,
+  var // 10MB
+  filesystemSize = 1e7;
 
-  filesystem, filesystemSize = 1e7, // 10MB
+  var playlist;
+  var show;
+  var compo;
+  var missing = [];
 
-  playlist, show, compo, 
-
-  missing = [],
-
-  features = {
-    "projector":  {available: false, needed: true,  test: function(ondone){ondone();}},
-    "webcam":     {available: false, needed: false, test: function(){}},
-    "saveshows":  {available: false, needed: false, test: function(){}},
-    "analyser":   {available: false, needed: true,  test: function(){}},
+  var features = {
+    "projector":  {available: false, needed: true,  test(ondone) {ondone();}},
+    "webcam":     {available: false, needed: false, test() {}},
+    "saveshows":  {available: false, needed: false, test() {}},
+    "analyser":   {available: false, needed: true,  test() {}},
     "readlocal":  {available: false, needed: false, test: false},
     // "runslocal":  {available: (window.location.host) ? false : true, needed: false, test: false},
     "runslocal":  {available: true, needed: false, test: false}
-  },
+  };
 
-  jslintOptions = {
+  var jslintOptions = {
     browser: true, 
     devel: true, 
     debug: true, 
@@ -37,7 +39,7 @@ var Loader = (function(){
     predef: ["EFX", "Filter", "Pixastic"]
   };
 
-  function error (e, device, msg){return {event: e, device: device, message: msg};}
+  function error (e, device, msg){return {event: e, device, message: msg};}
 
   function loadScript(pathfile, onload, onerror){
     var scr = document.createElement("SCRIPT");
@@ -59,28 +61,32 @@ var Loader = (function(){
   }
 
   function countMembers(obj){
-    var m, count = 0; for (m in obj){count += 1;} 
+    var m;
+    var count = 0;
+    for (m in obj){count += 1;}
     return count;
   }
 
   function getMembersList(obj){
-    var m, akku = []; for (m in obj){akku.push(m);} 
+    var m;
+    var akku = [];
+    for (m in obj){akku.push(m);}
     return akku.join(", ");
   }
 
 
   return {
-    init: function(){
+    init() {
       self = this;
       window.onerror = this.onerror;
       window.onload  = this.onload;
-      this.__defineGetter__('fs',         function( ){return filesystem;});
-      this.__defineGetter__('features',   function( ){return features;});
-      this.__defineGetter__('playlist',   function( ){return playlist;});
+      this.__defineGetter__('fs',         () => filesystem);
+      this.__defineGetter__('features',   () => features);
+      this.__defineGetter__('playlist',   () => playlist);
 
       return this;
     },
-    showError: function (msg, detail, help){
+    showError(msg, detail, help) {
 
       var url = "https://www.google.com/intl/en/chrome/browser/";
       var link = "<a href='" + url + "'>Google Chrome</a>";
@@ -96,9 +102,10 @@ var Loader = (function(){
       document.getElementById("projector").style.display = "none";
       document.getElementById("audioselector").style.display = "none";
     },    
-    onerror: function (error){
-
-      var msg, detail, help;
+    onerror(error) {
+      var msg;
+      var detail;
+      var help;
 
       errorCounter += 1;
 
@@ -125,55 +132,54 @@ var Loader = (function(){
           throw (error.toString());
         } catch(er2){ /* fail silently */ }
       }
-
     },    
-    onload: function(){
+    onload() {
 
       var tasks = [];
 
-      tasks.push(function(onready){
-        self.check(function(err){
+      tasks.push(onready => {
+        self.check(err => {
           TIM.step(" OK Check");
           onready(err);
         });
       });
 
-      tasks.push(function(onready){
+      tasks.push(onready => {
 
         var EFXS = DB.get("effects");
         EFXS = []; // TODO: remove loading from html
         window.EFX = window.EFX || {}; 
-        self.loadEffects(EFXS, function(err){
+        self.loadEffects(EFXS, err => {
           TIM.step(" OK EFX", getMembersList(window.EFX));
           onready(err);          
         });
 
       });
 
-      tasks.push(function(onready){
+      tasks.push(onready => {
         show  = H.getURLParameter("show", DB.get("show")),
         compo = H.getURLParameter("compo", "");
         window.Shows = {};
-        self.loadShows([show], function(err){
+        self.loadShows([show], err => {
           TIM.step(" OK Shows", show + " / " + getMembersList(window.Shows));
           onready(err);
         });
       });
 
 
-      tasks.push(function(onready){
+      tasks.push(onready => {
         Projector.load();
         DPCS.init();
         Projector.activate();
         Editor.activate();
-        Projector.initShows(function(err){
+        Projector.initShows(err => {
           TIM.step(" OK Activated", "DPCS, Editor, Projector");
           onready(err);
         });
       });
 
-      tasks.push(function(onready){
-        Projector.loadShow(show, compo, function(){
+      tasks.push(onready => {
+        Projector.loadShow(show, compo, () => {
           TIM.step(" OK Show." + show, 
             Projector.compos.length  + " compos, " + 
             Projector.filters.length + " filters" 
@@ -182,7 +188,7 @@ var Loader = (function(){
         });
       });
 
-      tasks.push(function(onready){
+      tasks.push(onready => {
         if (AudioContext) {
           AudioPlayer.init();
           AudioPlayer.activate();
@@ -197,7 +203,7 @@ var Loader = (function(){
         onready();
       });
 
-      async.series(tasks, function(err, res){
+      async.series(tasks, (err, res) => {
         if(err){
           self.onerror(error(err, "Loading '" + err.device + "' failed", err.message));
         } else {
@@ -262,7 +268,7 @@ var Loader = (function(){
       // });
 
     },
-    check: function(onchecked){
+    check(onchecked) {
 
       var tasks = [];
 
@@ -289,11 +295,11 @@ var Loader = (function(){
         TIM.step(" OK Browser", navigator.sayswho[0] + ": " + navigator.sayswho[1]);
       }
 
-      tasks.push(function(onready){
+      tasks.push(onready => {
         DB.init(onready);
       });
 
-      tasks.push(function(onready){
+      tasks.push(onready => {
 
         TIM.step("NOT FileSystem");
         onready();
@@ -329,17 +335,18 @@ var Loader = (function(){
 
       });
 
-      tasks.push(function(onready){
-        var catched, xhr = new XMLHttpRequest();
+      tasks.push(onready => {
+        var catched;
+        var xhr = new XMLHttpRequest();
         xhr.open("GET", "playlist.txt", true);
-        xhr.onerror = function(e){
+        xhr.onerror = e => {
           if (!catched) {
             TIM.step("NOK Playlist", "--allow-file-access-from-files, missing");
             catched = true;
             onready();
           }
         };
-        xhr.onreadystatechange = function() {
+        xhr.onreadystatechange = () => {
           if (xhr.readyState === 4 && xhr.responseText) {
             playlist = xhr.responseText.split("\n");
             features.readlocal.available = true;
@@ -361,14 +368,13 @@ var Loader = (function(){
         }
       });
 
-      tasks.push(function(onready){
-
-        var url, radios = DB.get("audio").radios;
+      tasks.push(onready => {
+        var url;
+        var radios = DB.get("audio").radios;
         for (url in radios) {
           $("#ap_radiourl").append($("<option>").attr("value", url).text(radios[url]));
         }
         onready();
-
       });
 
       // tasks.push(function(onready){
@@ -377,7 +383,7 @@ var Loader = (function(){
       //   } else {onready();}
       // });
 
-      async.series(tasks, function(err, res){
+      async.series(tasks, (err, res) => {
         if(err){
           self.onerror(error(err, "Loading '" + err.device + "' failed", err.message));
         } else {
@@ -386,75 +392,50 @@ var Loader = (function(){
       });
 
     },
-    loadEffects: function(effects, onloaded){
+    loadEffects(effects, onloaded) {
 
-      var tasks = effects.map(function(name){
-        return function(onready){
+      var tasks = effects.map(name => onready => {
+        var js;
+        var errors;
+        var results;
+        var xhr = new XMLHttpRequest();
+        var lib = "effects/effects." + name + ".js?" + Date.now();
 
-          var js, errors, results, 
-              xhr = new XMLHttpRequest(),
-              lib = "effects/effects." + name + ".js?" + Date.now();
-
-          if (doParse) {
-            xhr.onerror = function(e) {
-              onready(error(e, lib, "XXXX"));
-            };
-            xhr.onload = function() {
-              if (xhr.readyState === 4) {                
-                js = xhr.responseText;
-                results = JSLINT(js, jslintOptions);
-                errors  = JSLINT.errors;
-                if (errors) {
-                  self.onerror(error(null, lib, 
-                    errors.length + " parsing errors<br />line " + errors[0].line + " : " + errors[0].reason
-                  ));
-                  console.log(errors);
-                } else {
-                  loadScript(lib,
-                    function( ){onready();},
-                    function(e){onready(error(e, lib, "XXXX"));}
-                  );
-                }
-
+        if (doParse) {
+          xhr.onerror = e => {
+            onready(error(e, lib, "XXXX"));
+          };
+          xhr.onload = () => {
+            if (xhr.readyState === 4) {                
+              js = xhr.responseText;
+              results = JSLINT(js, jslintOptions);
+              errors  = JSLINT.errors;
+              if (errors) {
+                self.onerror(error(null, lib, 
+                  errors.length + " parsing errors<br />line " + errors[0].line + " : " + errors[0].reason
+                ));
+                console.log(errors);
+              } else {
+                loadScript(lib,
+                  () => {onready();},
+                  e => {onready(error(e, lib, "XXXX"));}
+                );
               }
-            };
-            xhr.open("GET", + lib, true);
-            xhr.send(null);
 
-          } else {
-            loadScript(lib,
-              function( ){onready();},
-              function(e){onready(error(e, lib, "XXXX"));}
-            );
-          }
+            }
+          };
+          xhr.open("GET", + lib, true);
+          xhr.send(null);
 
-
-        };
-      });
-
-      async.series(tasks, function(err, res){
-        if(err){
-          self.onerror(err);
         } else {
-          onloaded();
-        }
-      });
-
-    },
-    loadShows: function(shows, onloaded){
-
-      var tasks = shows.map(function(name){
-        return function(onready){
-          var lib = "shows/show." + name + ".js?" + Date.now();
-
           loadScript(lib,
-            function( ){onready();},
-            function(e){onready(error(e, lib, "XXXX"));}
+            () => {onready();},
+            e => {onready(error(e, lib, "XXXX"));}
           );
-        };
+        }
       });
 
-      async.series(tasks, function(err, res){
+      async.series(tasks, (err, res) => {
         if(err){
           self.onerror(err);
         } else {
@@ -463,9 +444,27 @@ var Loader = (function(){
       });
 
     },
-    XXXX: function(){}
+    loadShows(shows, onloaded) {
+
+      var tasks = shows.map(name => onready => {
+        var lib = "shows/show." + name + ".js?" + Date.now();
+
+        loadScript(lib,
+          () => {onready();},
+          e => {onready(error(e, lib, "XXXX"));}
+        );
+      });
+
+      async.series(tasks, (err, res) => {
+        if(err){
+          self.onerror(err);
+        } else {
+          onloaded();
+        }
+      });
+
+    },
+    XXXX() {}
   };
-
-
-}()).init();
+})()).init();
 

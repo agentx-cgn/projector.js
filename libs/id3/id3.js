@@ -7,7 +7,7 @@
  * Modified by António Afonso <antonio.afonso gmail.com>
  */
 
-(function(ns) {
+((ns => {
     var ID3 = ns.ID3 = {};
     
     var _files = {};
@@ -39,15 +39,15 @@
      * @param {function()} cb The callback function to be invoked when all tags have been read.
      * @param {{tags: Array.<string>, dataReader: function(string, function(BinaryReader))}} options The set of options that can specify the tags to be read and the dataReader to use in order to read the file located at url.
      */
-    ID3.loadTags = function(url, cb, options) {
+    ID3.loadTags = (url, cb, options) => {
         options = options || {};
         var dataReader = options["dataReader"] || BufferedBinaryAjax;
         
-        dataReader(url, function(data) {
+        dataReader(url, data => {
             // preload the format identifier
-            data.loadRange(_formatIDRange, function() {
+            data.loadRange(_formatIDRange, () => {
                 var reader = getTagReader(data);
-                reader.loadData(data, function() {
+                reader.loadData(data, () => {
                     readTags(reader, data, url, options["tags"]);
                     if( cb ) cb();
                 });
@@ -55,7 +55,7 @@
         });     
     };
 
-    ID3.getAllTags = function(url) {
+    ID3.getAllTags = url => {
         if (!_files[url]) return null;
         
         var tags = {};
@@ -66,7 +66,7 @@
         return tags;
     };
 
-    ID3.getTag = function(url, tag) {
+    ID3.getTag = (url, tag) => {
         if (!_files[url]) return null;
 
         return _files[url][tag];
@@ -77,4 +77,4 @@
     ID3["loadTags"] = ID3.loadTags;
     ID3["getAllTags"] = ID3.getAllTags;
     ID3["getTag"] = ID3.getTag;
-})(this);
+}))(this);

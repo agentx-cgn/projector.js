@@ -7,7 +7,7 @@
  * MIT License [http://www.opensource.org/licenses/mit-license.php]
  */
 
-(function(ns) {
+((ns => {
     var ID4 = ns.ID4 = {};
     
     ID4.types = {
@@ -36,9 +36,9 @@
         '©gen': ['genre']
     };
 
-    ID4.loadData = function(data, callback) {
+    ID4.loadData = (data, callback) => {
         // load the header of the first block
-        data.loadRange([0, 7], function () {
+        data.loadRange([0, 7], () => {
             loadAtom(data, 0, data.getLength(), callback);
         });
     };
@@ -59,19 +59,19 @@
         if (['moov', 'udta', 'meta', 'ilst'].indexOf(atomName) > -1)
         {
             if (atomName == 'meta') offset += 4; // next_item_id (uint32)
-            data.loadRange([offset+8, offset+8 + 8], function() {
+            data.loadRange([offset+8, offset+8 + 8], () => {
                 loadAtom(data, offset + 8, atomSize - 8, callback);
             });
         } else {
             // Value atoms
             var readAtom = atomName in ID4.atom;
-            data.loadRange([offset+(readAtom?0:atomSize), offset+atomSize + 8], function() {
+            data.loadRange([offset+(readAtom?0:atomSize), offset+atomSize + 8], () => {
                 loadAtom(data, offset+atomSize, length, callback);
             });
         }       
     };
 
-    ID4.readTagsFromData = function(data) {
+    ID4.readTagsFromData = data => {
         var tag = {};
         readAtom(tag, data, 0, data.getLength());
         return tag;
@@ -136,4 +136,4 @@
     
     // Export functions for closure compiler
     ns["ID4"] = ns.ID4;
-})(this);
+}))(this);

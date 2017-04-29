@@ -49,11 +49,17 @@ EFX.Audio.Waveform.prototype.load = function(onloaded){
 };
 EFX.Audio.Waveform.prototype.resize = new Function();
 EFX.Audio.Waveform.prototype.beforeDraw = function(ops){
-
   // better: http://www.htmlfivewow.com/demos/audio-visualizer/index.html
 
-  var i, y, ctx = this.ctx, array = this.projector.audioplayer.dataWaveform,
-      sum = 0, avg = 0, len, hgt;
+  var i;
+
+  var y;
+  var ctx = this.ctx;
+  var array = this.projector.audioplayer.dataWaveform;
+  var sum = 0;
+  var avg = 0;
+  var len;
+  var hgt;
 
   len = array.length;
   hgt = this.source.height/len;
@@ -94,8 +100,6 @@ EFX.Audio.Waveform.prototype.beforeDraw = function(ops){
       ctx.fillRect(array[i]-1, y, this.signalWidth, hgt);
     }
   }
-
-
 };
 
 //--------------  S P E C T R U M  --------------------------------------------
@@ -123,12 +127,18 @@ EFX.Audio.Spectrum.prototype.load = function(onloaded){
 
 };
 EFX.Audio.Spectrum.prototype.beforeDraw = function(){
-
   // better: http://www.htmlfivewow.com/demos/audio-visualizer/index.html
 
-  var i, y, ctx = this.ctx, array = this.projector.audioplayer.dataFrequency,
-      sum = 0, avg = 0, len, hgt;
-      
+  var i;
+
+  var y;
+  var ctx = this.ctx;
+  var array = this.projector.audioplayer.dataFrequency;
+  var sum = 0;
+  var avg = 0;
+  var len;
+  var hgt;
+
   len = array.length;
   hgt = this.height/len;
 
@@ -165,6 +175,4 @@ EFX.Audio.Spectrum.prototype.beforeDraw = function(){
       ctx.fillRect(array[i]-1, y, this.signalWidth, hgt);
     }
   }
-
-
 };

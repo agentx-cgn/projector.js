@@ -48,10 +48,10 @@ window.URL =
   window.webkitURL;
 
 document.IsFullScreen =
-  (typeof document.IsFullScreen !== "undefined")       ? function(){return document.IsFullScreen; } :
-  (typeof document.webkitIsFullScreen !== "undefined") ? function(){return document.webkitIsFullScreen; } :
-  (typeof document.mozFullScreen !== "undefined")      ? function(){return document.mozFullScreen; } :
-  function(){return !!document.fullscreenElement; };
+  (typeof document.IsFullScreen !== "undefined")       ? () => document.IsFullScreen :
+  (typeof document.webkitIsFullScreen !== "undefined") ? () => document.webkitIsFullScreen :
+  (typeof document.mozFullScreen !== "undefined")      ? () => document.mozFullScreen :
+  () => !!document.fullscreenElement;
 
 
 // http://www.html5rocks.com/en/tutorials/file/filesystem/

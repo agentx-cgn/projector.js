@@ -6,7 +6,7 @@
 
 Pixastic.Actions.blend = {
 
-	process : function(params) {
+	process(params) {
 		var amount = parseFloat(params.options.amount);
 		var mode = (params.options.mode || "normal").toLowerCase();
 		var image = params.options.image;
@@ -16,35 +16,43 @@ Pixastic.Actions.blend = {
 		if (!image) return false;
 
 		if (Pixastic.Client.hasCanvasImageData()) {
+            var rect = params.options.rect;
+            var data = Pixastic.prepareData(params);
+            var w = rect.width;
+            var h = rect.height;
 
-			var rect = params.options.rect;
-			var data = Pixastic.prepareData(params);
-			var w = rect.width;
-			var h = rect.height;
+            params.useData = false;
 
-			params.useData = false;
+            var otherCanvas = document.createElement("canvas");
+            otherCanvas.width = params.canvas.width;
+            otherCanvas.height = params.canvas.height;
+            var otherCtx = otherCanvas.getContext("2d");
+            otherCtx.drawImage(image,0,0);
 
-			var otherCanvas = document.createElement("canvas");
-			otherCanvas.width = params.canvas.width;
-			otherCanvas.height = params.canvas.height;
-			var otherCtx = otherCanvas.getContext("2d");
-			otherCtx.drawImage(image,0,0);
+            var params2 = {canvas:otherCanvas,options:params.options};
+            var data2 = Pixastic.prepareData(params2);
+            var dataDesc2 = params2.canvasData;
 
-			var params2 = {canvas:otherCanvas,options:params.options};
-			var data2 = Pixastic.prepareData(params2);
-			var dataDesc2 = params2.canvasData;
+            var p = w*h;
+            var pix = p*4;
+            var pix1;
+            var pix2;
+            var r1;
+            var g1;
+            var b1;
+            var r2;
+            var g2;
+            var b2;
+            var r3;
+            var g3;
+            var b3;
+            var r4;
+            var g4;
+            var b4;
 
-			var p = w*h;
-			var pix = p*4;
-			var pix1, pix2;
-			var r1, g1, b1;
-			var r2, g2, b2;
-			var r3, g3, b3;
-			var r4, g4, b4;
+            var dataChanged = false;
 
-			var dataChanged = false;
-
-			switch (mode) {
+            switch (mode) {
 				case "normal" : 
 					//while (p--) {
 					//	data2[pix-=4] = data2[pix];
@@ -468,10 +476,10 @@ Pixastic.Actions.blend = {
 					break;
 			}
 
-			if (dataChanged) 
+            if (dataChanged) 
 				otherCtx.putImageData(dataDesc2,0,0);
 
-			if (amount != 1 && !Pixastic.Client.hasGlobalAlpha()) {
+            if (amount != 1 && !Pixastic.Client.hasGlobalAlpha()) {
 				var p = w*h;
 				var amount2 = amount;
 				var amount1 = 1 - amount;
@@ -499,10 +507,10 @@ Pixastic.Actions.blend = {
 				ctx.restore();
 			}
 
-			return true;
-		}
+            return true;
+        }
 	},
-	checkSupport : function() {
+	checkSupport() {
 		return Pixastic.Client.hasCanvasImageData();
 	}
 }/*
@@ -512,7 +520,7 @@ Pixastic.Actions.blend = {
  */
 
 Pixastic.Actions.blur = {
-	process : function(params) {
+	process(params) {
 
 		if (typeof params.options.fixMargin == "undefined")
 			params.options.fixMargin = true;
@@ -574,11 +582,10 @@ Pixastic.Actions.blur = {
 						+ dataCopy[offsetNext+4]
 						+ 
 						*/
-						(dataCopy[offsetPrev]
+						((dataCopy[offsetPrev]
 						+ dataCopy[offset-4]
 						+ dataCopy[offset+4]
-						+ dataCopy[offsetNext])		* 2
-						+ dataCopy[offset] 		* 4
+						+ dataCopy[offsetNext])		* 2 + dataCopy[offset] 		* 4)
 						) * weight;
 
 					data[offset+1] = (
@@ -589,11 +596,10 @@ Pixastic.Actions.blur = {
 						+ dataCopy[offsetNext+5]
 						+ 
 						*/
-						(dataCopy[offsetPrev+1]
+						((dataCopy[offsetPrev+1]
 						+ dataCopy[offset-3]
 						+ dataCopy[offset+5]
-						+ dataCopy[offsetNext+1])	* 2
-						+ dataCopy[offset+1] 		* 4
+						+ dataCopy[offsetNext+1])	* 2 + dataCopy[offset+1] 		* 4)
 						) * weight;
 
 					data[offset+2] = (
@@ -604,11 +610,10 @@ Pixastic.Actions.blur = {
 						+ dataCopy[offsetNext+6]
 						+ 
 						*/
-						(dataCopy[offsetPrev+2]
+						((dataCopy[offsetPrev+2]
 						+ dataCopy[offset-2]
 						+ dataCopy[offset+6]
-						+ dataCopy[offsetNext+2])	* 2
-						+ dataCopy[offset+2] 		* 4
+						+ dataCopy[offsetNext+2])	* 2 + dataCopy[offset+2] 		* 4)
 						) * weight;
 
 				} while (--x);
@@ -627,7 +632,7 @@ Pixastic.Actions.blur = {
 			return true;
 		}
 	},
-	checkSupport : function() {
+	checkSupport() {
 		return (Pixastic.Client.hasCanvasImageData() || Pixastic.Client.isIE());
 	}
 }/*
@@ -637,7 +642,7 @@ Pixastic.Actions.blur = {
  */
 
 Pixastic.Actions.blurfast = {
-	process : function(params) {
+	process(params) {
 
 		var amount = parseFloat(params.options.amount)||0;
 		var clear = !!(params.options.clear && params.options.clear != "false");
@@ -703,7 +708,7 @@ Pixastic.Actions.blurfast = {
 			return true;
 		}
 	},
-	checkSupport : function() {
+	checkSupport() {
 		return (Pixastic.Client.hasCanvas() || Pixastic.Client.isIE());
 	}
 }
@@ -715,7 +720,7 @@ Pixastic.Actions.blurfast = {
 
 Pixastic.Actions.brightness = {
 
-	process : function(params) {
+	process(params) {
 
 		var brightness = parseInt(params.options.brightness,10) || 0;
 		var contrast = parseFloat(params.options.contrast)||0;
@@ -729,16 +734,18 @@ Pixastic.Actions.brightness = {
 		contrast = Math.max(0,contrast+1);
 
 		if (Pixastic.Client.hasCanvasImageData()) {
-			var data = Pixastic.prepareData(params);
-			var rect = params.options.rect;
-			var w = rect.width;
-			var h = rect.height;
+            var data = Pixastic.prepareData(params);
+            var rect = params.options.rect;
+            var w = rect.width;
+            var h = rect.height;
 
-			var p = w*h;
-			var pix = p*4, pix1, pix2;
-
-			var mul, add;
-			if (contrast != 1) {
+            var p = w*h;
+            var pix = p*4;
+            var pix1;
+            var pix2;
+            var mul;
+            var add;
+            if (contrast != 1) {
 				if (legacy) {
 					mul = contrast;
 					add = (brightness - 128) * contrast + 128;
@@ -755,8 +762,10 @@ Pixastic.Actions.brightness = {
 					add = 0;
 				}
 			}
-			var r, g, b;
-			while (p--) {
+            var r;
+            var g;
+            var b;
+            while (p--) {
 				if ((r = data[pix-=4] * mul + add) > 255 )
 					data[pix] = 255;
 				else if (r < 0)
@@ -778,10 +787,10 @@ Pixastic.Actions.brightness = {
 				else
 					data[pix2] = b;
 			}
-			return true;
-		}
+            return true;
+        }
 	},
-	checkSupport : function() {
+	checkSupport() {
 		return Pixastic.Client.hasCanvasImageData();
 	}
 }
@@ -794,7 +803,7 @@ Pixastic.Actions.brightness = {
 
 Pixastic.Actions.coloradjust = {
 
-	process : function(params) {
+	process(params) {
 		var red = parseFloat(params.options.red) || 0;
 		var green = parseFloat(params.options.green) || 0;
 		var blue = parseFloat(params.options.blue) || 0;
@@ -804,14 +813,17 @@ Pixastic.Actions.coloradjust = {
 		blue = Math.round(blue*255);
 
 		if (Pixastic.Client.hasCanvasImageData()) {
-			var data = Pixastic.prepareData(params);
-			var rect = params.options.rect;
+            var data = Pixastic.prepareData(params);
+            var rect = params.options.rect;
 
-			var p = rect.width*rect.height;
-			var pix = p*4, pix1, pix2;
-
-			var r, g, b;
-			while (p--) {
+            var p = rect.width*rect.height;
+            var pix = p*4;
+            var pix1;
+            var pix2;
+            var r;
+            var g;
+            var b;
+            while (p--) {
 				pix -= 4;
 
 				if (red) {
@@ -841,10 +853,10 @@ Pixastic.Actions.coloradjust = {
 						data[pix2] = b;
 				}
 			}
-			return true;
-		}
+            return true;
+        }
 	},
-	checkSupport : function() {
+	checkSupport() {
 		return (Pixastic.Client.hasCanvasImageData());
 	}
 }
@@ -857,13 +869,13 @@ Pixastic.Actions.coloradjust = {
 
 Pixastic.Actions.colorhistogram = {
 
-	array256 : function(default_value) {
+	array256(default_value) {
 		arr = [];
 		for (var i=0; i<256; i++) { arr[i] = default_value; }
 		return arr
 	},
  
-	process : function(params) {
+	process(params) {
 		var values = [];
 		if (typeof params.options.returnValue != "object") {
 			params.options.returnValue = {rvals:[], gvals:[], bvals:[]};
@@ -926,7 +938,7 @@ Pixastic.Actions.colorhistogram = {
 		}
 	},
 
-	checkSupport : function() {
+	checkSupport() {
 		return Pixastic.Client.hasCanvasImageData();
 	}
 }/*
@@ -936,7 +948,7 @@ Pixastic.Actions.colorhistogram = {
  */
 
 Pixastic.Actions.crop = {
-	process : function(params) {
+	process(params) {
 		if (Pixastic.Client.hasCanvas()) {
 			var rect = params.options.rect;
 
@@ -986,7 +998,7 @@ Pixastic.Actions.crop = {
 			return true;
 		}
 	},
-	checkSupport : function() {
+	checkSupport() {
 		return Pixastic.Client.hasCanvas();
 	}
 }
@@ -1000,32 +1012,34 @@ Pixastic.Actions.crop = {
 
 Pixastic.Actions.desaturate = {
 
-	process : function(params) {
+	process(params) {
 		var useAverage = !!(params.options.average && params.options.average != "false");
 
 		if (Pixastic.Client.hasCanvasImageData()) {
-			var data = Pixastic.prepareData(params);
-			var rect = params.options.rect;
-			var w = rect.width;
-			var h = rect.height;
+            var data = Pixastic.prepareData(params);
+            var rect = params.options.rect;
+            var w = rect.width;
+            var h = rect.height;
 
-			var p = w*h;
-			var pix = p*4, pix1, pix2;
+            var p = w*h;
+            var pix = p*4;
+            var pix1;
+            var pix2;
 
-			if (useAverage) {
+            if (useAverage) {
 				while (p--) 
 					data[pix-=4] = data[pix1=pix+1] = data[pix2=pix+2] = (data[pix]+data[pix1]+data[pix2])/3
 			} else {
 				while (p--)
 					data[pix-=4] = data[pix1=pix+1] = data[pix2=pix+2] = (data[pix]*0.3 + data[pix1]*0.59 + data[pix2]*0.11);
 			}
-			return true;
-		} else if (Pixastic.Client.isIE()) {
+            return true;
+        } else if (Pixastic.Client.isIE()) {
 			params.image.style.filter += " gray";
 			return true;
 		}
 	},
-	checkSupport : function() {
+	checkSupport() {
 		return (Pixastic.Client.hasCanvasImageData() || Pixastic.Client.isIE());
 	}
 }/*
@@ -1035,7 +1049,7 @@ Pixastic.Actions.desaturate = {
  */
 
 Pixastic.Actions.edges = {
-	process : function(params) {
+	process(params) {
 
 		var mono = !!(params.options.mono && params.options.mono != "false");
 		var invert = !!(params.options.invert && params.options.invert != "false");
@@ -1139,7 +1153,7 @@ Pixastic.Actions.edges = {
 			return true;
 		}
 	},
-	checkSupport : function() {
+	checkSupport() {
 		return Pixastic.Client.hasCanvasImageData();
 	}
 }
@@ -1154,7 +1168,7 @@ Pixastic.Actions.edges = {
  */
 
 Pixastic.Actions.edges3 = {
-	process : function(params) {
+	process(params) {
 
 		if (Pixastic.Client.hasCanvasImageData()) {
 			var data = Pixastic.prepareData(params);
@@ -1173,35 +1187,39 @@ Pixastic.Actions.edges3 = {
 			var tL = params.tLower;
 
 			for (var y = 1; y < hm1; ++y) {
-				// Prepare initial cached values for current row
-				var centerRow = pixel - 4;
-				var priorRow = centerRow - w4;
-				var nextRow = centerRow + w4;
-				
-				var r1 = - dataCopy[priorRow]   - dataCopy[centerRow]   - dataCopy[nextRow];
-				var g1 = - dataCopy[++priorRow] - dataCopy[++centerRow] - dataCopy[++nextRow];
-				var b1 = - dataCopy[++priorRow] - dataCopy[++centerRow] - dataCopy[++nextRow];
-				
-				var rp = dataCopy[priorRow += 2];
-				var gp = dataCopy[++priorRow];
-				var bp = dataCopy[++priorRow];
-				
-				var rc = dataCopy[centerRow += 2];
-				var gc = dataCopy[++centerRow];
-				var bc = dataCopy[++centerRow];
-				
-				var rn = dataCopy[nextRow += 2];
-				var gn = dataCopy[++nextRow];
-				var bn = dataCopy[++nextRow];
-				
-				var r2 = - rp - rc - rn;
-				var g2 = - gp - gc - gn;
-				var b2 = - bp - bc - bn;
+                // Prepare initial cached values for current row
+                var centerRow = pixel - 4;
+                var priorRow = centerRow - w4;
+                var nextRow = centerRow + w4;
 
-				var x, r, g, b, p;
-				
-				// Main convolution loop
-				for (x = 1; x < wm1; ++x) {
+                var r1 = - dataCopy[priorRow]   - dataCopy[centerRow]   - dataCopy[nextRow];
+                var g1 = - dataCopy[++priorRow] - dataCopy[++centerRow] - dataCopy[++nextRow];
+                var b1 = - dataCopy[++priorRow] - dataCopy[++centerRow] - dataCopy[++nextRow];
+
+                var rp = dataCopy[priorRow += 2];
+                var gp = dataCopy[++priorRow];
+                var bp = dataCopy[++priorRow];
+
+                var rc = dataCopy[centerRow += 2];
+                var gc = dataCopy[++centerRow];
+                var bc = dataCopy[++centerRow];
+
+                var rn = dataCopy[nextRow += 2];
+                var gn = dataCopy[++nextRow];
+                var bn = dataCopy[++nextRow];
+
+                var r2 = - rp - rc - rn;
+                var g2 = - gp - gc - gn;
+                var b2 = - bp - bc - bn;
+
+                var x;
+                var r;
+                var g;
+                var b;
+                var p;
+
+                // Main convolution loop
+                for (x = 1; x < wm1; ++x) {
 
 					centerRow = pixel + 4;
 					priorRow = centerRow - w4;
@@ -1240,12 +1258,12 @@ Pixastic.Actions.edges3 = {
 
 					pixel+=2;
 				}
-				pixel += 8;
-			}
+                pixel += 8;
+            }
 			return true;
 		}
 	},
-	checkSupport : function() {
+	checkSupport() {
 		return Pixastic.Client.hasCanvasImageData();
 	}
 }
@@ -1258,7 +1276,7 @@ Pixastic.Actions.edges3 = {
  */
 
 Pixastic.Actions.emboss = {
-	process : function(params) {
+	process(params) {
 
 		var strength = parseFloat(params.options.strength)||1;
 		var greyLevel = typeof params.options.greyLevel != "undefined" ? parseInt(params.options.greyLevel) : 180;
@@ -1380,7 +1398,7 @@ Pixastic.Actions.emboss = {
 			return true;
 		}
 	},
-	checkSupport : function() {
+	checkSupport() {
 		return (Pixastic.Client.hasCanvasImageData() || Pixastic.Client.isIE());
 	}
 
@@ -1392,7 +1410,7 @@ Pixastic.Actions.emboss = {
  */
 
 Pixastic.Actions.flip = {
-	process : function(params) {
+	process(params) {
 		var rect = params.options.rect;
 		var copyCanvas = document.createElement("canvas");
 		copyCanvas.width = rect.width;
@@ -1414,7 +1432,7 @@ Pixastic.Actions.flip = {
 
 		return true;		
 	},
-	checkSupport : function() {
+	checkSupport() {
 		return Pixastic.Client.hasCanvas();
 	}
 }
@@ -1426,7 +1444,7 @@ Pixastic.Actions.flip = {
  */
 
 Pixastic.Actions.fliph = {
-	process : function(params) {
+	process(params) {
 		if (Pixastic.Client.hasCanvas()) {
 			var rect = params.options.rect;
 			var copyCanvas = document.createElement("canvas");
@@ -1447,7 +1465,7 @@ Pixastic.Actions.fliph = {
 			return true;
 		}
 	},
-	checkSupport : function() {
+	checkSupport() {
 		return (Pixastic.Client.hasCanvas() || Pixastic.Client.isIE());
 	}
 }
@@ -1459,7 +1477,7 @@ Pixastic.Actions.fliph = {
  */
 
 Pixastic.Actions.flipv = {
-	process : function(params) {
+	process(params) {
 		if (Pixastic.Client.hasCanvas()) {
 			var rect = params.options.rect;
 			var copyCanvas = document.createElement("canvas");
@@ -1480,7 +1498,7 @@ Pixastic.Actions.flipv = {
 			return true;
 		}
 	},
-	checkSupport : function() {
+	checkSupport() {
 		return (Pixastic.Client.hasCanvas() || Pixastic.Client.isIE());
 	}
 }
@@ -1493,7 +1511,7 @@ Pixastic.Actions.flipv = {
 
 
 Pixastic.Actions.glow = {
-	process : function(params) {
+	process(params) {
 
 		var amount = (parseFloat(params.options.amount)||0);
 		var blurAmount = parseFloat(params.options.radius)||0;
@@ -1502,27 +1520,27 @@ Pixastic.Actions.glow = {
 		blurAmount = Math.min(5,Math.max(0,blurAmount));
 
 		if (Pixastic.Client.hasCanvasImageData()) {
-			var rect = params.options.rect;
+            var rect = params.options.rect;
 
-			var blurCanvas = document.createElement("canvas");
-			blurCanvas.width = params.width;
-			blurCanvas.height = params.height;
-			var blurCtx = blurCanvas.getContext("2d");
-			blurCtx.drawImage(params.canvas,0,0);
+            var blurCanvas = document.createElement("canvas");
+            blurCanvas.width = params.width;
+            blurCanvas.height = params.height;
+            var blurCtx = blurCanvas.getContext("2d");
+            blurCtx.drawImage(params.canvas,0,0);
 
-			var scale = 2;
-			var smallWidth = Math.round(params.width / scale);
-			var smallHeight = Math.round(params.height / scale);
+            var scale = 2;
+            var smallWidth = Math.round(params.width / scale);
+            var smallHeight = Math.round(params.height / scale);
 
-			var copy = document.createElement("canvas");
-			copy.width = smallWidth;
-			copy.height = smallHeight;
+            var copy = document.createElement("canvas");
+            copy.width = smallWidth;
+            copy.height = smallHeight;
 
-			var clear = true;
-			var steps = Math.round(blurAmount * 20);
+            var clear = true;
+            var steps = Math.round(blurAmount * 20);
 
-			var copyCtx = copy.getContext("2d");
-			for (var i=0;i<steps;i++) {
+            var copyCtx = copy.getContext("2d");
+            for (var i=0;i<steps;i++) {
 				var scaledWidth = Math.max(1,Math.round(smallWidth - i));
 				var scaledHeight = Math.max(1,Math.round(smallHeight - i));
 	
@@ -1543,22 +1561,25 @@ Pixastic.Actions.glow = {
 				);
 			}
 
-			var data = Pixastic.prepareData(params);
-			var blurData = Pixastic.prepareData({canvas:blurCanvas,options:params.options});
+            var data = Pixastic.prepareData(params);
+            var blurData = Pixastic.prepareData({canvas:blurCanvas,options:params.options});
 
-			var p = rect.width * rect.height;
+            var p = rect.width * rect.height;
 
-			var pix = p*4, pix1 = pix + 1, pix2 = pix + 2, pix3 = pix + 3;
-			while (p--) {
+            var pix = p*4;
+            var pix1 = pix + 1;
+            var pix2 = pix + 2;
+            var pix3 = pix + 3;
+            while (p--) {
 				if ((data[pix-=4] += amount * blurData[pix]) > 255) data[pix] = 255;
 				if ((data[pix1-=4] += amount * blurData[pix1]) > 255) data[pix1] = 255;
 				if ((data[pix2-=4] += amount * blurData[pix2]) > 255) data[pix2] = 255;
 			}
 
-			return true;
-		}
+            return true;
+        }
 	},
-	checkSupport : function() {
+	checkSupport() {
 		return Pixastic.Client.hasCanvasImageData();
 	}
 }
@@ -1572,7 +1593,7 @@ Pixastic.Actions.glow = {
  */
 
 Pixastic.Actions.histogram = {
-	process : function(params) {
+	process(params) {
 
 		var average = !!(params.options.average && params.options.average != "false");
 		var paint = !!(params.options.paint && params.options.paint != "false");
@@ -1588,20 +1609,23 @@ Pixastic.Actions.histogram = {
 		values = returnValue.values;
 
 		if (Pixastic.Client.hasCanvasImageData()) {
-			var data = Pixastic.prepareData(params);
-			params.useData = false;
+            var data = Pixastic.prepareData(params);
+            params.useData = false;
 
-			for (var i=0;i<256;i++) {
+            for (var i=0;i<256;i++) {
 				values[i] = 0;
 			}
 
-			var rect = params.options.rect;
-			var p = rect.width * rect.height;
+            var rect = params.options.rect;
+            var p = rect.width * rect.height;
 
-			var pix = p*4, pix1 = pix + 1, pix2 = pix + 2, pix3 = pix + 3;
-			var round = Math.round;
+            var pix = p*4;
+            var pix1 = pix + 1;
+            var pix2 = pix + 2;
+            var pix3 = pix + 3;
+            var round = Math.round;
 
-			if (average) {
+            if (average) {
 				while (p--) {
 					values[ round((data[pix-=4]+data[pix+1]+data[pix+2])/3) ]++;
 				}
@@ -1611,7 +1635,7 @@ Pixastic.Actions.histogram = {
 				}
 			}
 
-			if (paint) {
+            if (paint) {
 				var maxValue = 0;
 				for (var i=0;i<256;i++) {
 					if (values[i] > maxValue) {
@@ -1630,12 +1654,12 @@ Pixastic.Actions.histogram = {
 				}
 			}
 
-			returnValue.values = values;
+            returnValue.values = values;
 
-			return true;
-		}
+            return true;
+        }
 	},
-	checkSupport : function() {
+	checkSupport() {
 		return Pixastic.Client.hasCanvasImageData();
 	}
 }
@@ -1646,7 +1670,7 @@ Pixastic.Actions.histogram = {
  */
 
 Pixastic.Actions.hsl = {
-	process : function(params) {
+	process(params) {
 
 		var hue = parseInt(params.options.hue,10)||0;
 		var saturation = (parseInt(params.options.saturation,10)||0) / 100;
@@ -1669,15 +1693,18 @@ Pixastic.Actions.hsl = {
 		var lightp1 = 1 + lightness;
 		var lightm1 = 1 - lightness;
 		if (Pixastic.Client.hasCanvasImageData()) {
-			var data = Pixastic.prepareData(params);
+            var data = Pixastic.prepareData(params);
 
-			var rect = params.options.rect;
+            var rect = params.options.rect;
 
-			var p = rect.width * rect.height;
+            var p = rect.width * rect.height;
 
-			var pix = p*4, pix1 = pix + 1, pix2 = pix + 2, pix3 = pix + 3;
+            var pix = p*4;
+            var pix1 = pix + 1;
+            var pix2 = pix + 2;
+            var pix3 = pix + 3;
 
-			while (p--) {
+            while (p--) {
 
 				var r = data[pix-=4];
 				var g = data[pix1=pix+1];
@@ -1776,10 +1803,10 @@ Pixastic.Actions.hsl = {
 
 			}
 
-			return true;
-		}
+            return true;
+        }
 	},
-	checkSupport : function() {
+	checkSupport() {
 		return Pixastic.Client.hasCanvasImageData();
 	}
 
@@ -1791,18 +1818,21 @@ Pixastic.Actions.hsl = {
  */
 
 Pixastic.Actions.invert = {
-	process : function(params) {
+	process(params) {
 		if (Pixastic.Client.hasCanvasImageData()) {
-			var data = Pixastic.prepareData(params);
+            var data = Pixastic.prepareData(params);
 
-			var invertAlpha = !!params.options.invertAlpha;
-			var rect = params.options.rect;
+            var invertAlpha = !!params.options.invertAlpha;
+            var rect = params.options.rect;
 
-			var p = rect.width * rect.height;
+            var p = rect.width * rect.height;
 
-			var pix = p*4, pix1 = pix + 1, pix2 = pix + 2, pix3 = pix + 3;
+            var pix = p*4;
+            var pix1 = pix + 1;
+            var pix2 = pix + 2;
+            var pix3 = pix + 3;
 
-			while (p--) {
+            while (p--) {
 				data[pix-=4] = 255 - data[pix];
 				data[pix1-=4] = 255 - data[pix1];
 				data[pix2-=4] = 255 - data[pix2];
@@ -1810,13 +1840,13 @@ Pixastic.Actions.invert = {
 					data[pix3-=4] = 255 - data[pix3];
 			}
 
-			return true;
-		} else if (Pixastic.Client.isIE()) {
+            return true;
+        } else if (Pixastic.Client.isIE()) {
 			params.image.style.filter += " invert";
 			return true;
 		}
 	},
-	checkSupport : function() {
+	checkSupport() {
 		return (Pixastic.Client.hasCanvasImageData() || Pixastic.Client.isIE());
 	}
 }
@@ -1827,7 +1857,7 @@ Pixastic.Actions.invert = {
  */
 
 Pixastic.Actions.laplace = {
-	process : function(params) {
+	process(params) {
 
 		var strength = 1.0;
 		var invert = !!(params.options.invert && params.options.invert != "false");
@@ -1927,7 +1957,7 @@ Pixastic.Actions.laplace = {
 			return true;
 		}
 	},
-	checkSupport : function() {
+	checkSupport() {
 		return Pixastic.Client.hasCanvasImageData();
 	}
 }
@@ -1940,20 +1970,22 @@ Pixastic.Actions.laplace = {
 
 Pixastic.Actions.lighten = {
 
-	process : function(params) {
+	process(params) {
 		var amount = parseFloat(params.options.amount) || 0;
 		amount = Math.max(-1, Math.min(1, amount));
 
 		if (Pixastic.Client.hasCanvasImageData()) {
-			var data = Pixastic.prepareData(params);
-			var rect = params.options.rect;
+            var data = Pixastic.prepareData(params);
+            var rect = params.options.rect;
 
-			var p = rect.width * rect.height;
+            var p = rect.width * rect.height;
 
-			var pix = p*4, pix1 = pix + 1, pix2 = pix + 2;
-			var mul = amount + 1;
+            var pix = p*4;
+            var pix1 = pix + 1;
+            var pix2 = pix + 2;
+            var mul = amount + 1;
 
-			while (p--) {
+            while (p--) {
 				if ((data[pix-=4] = data[pix] * mul) > 255)
 					data[pix] = 255;
 
@@ -1965,9 +1997,8 @@ Pixastic.Actions.lighten = {
 
 			}
 
-			return true;
-
-		} else if (Pixastic.Client.isIE()) {
+            return true;
+        } else if (Pixastic.Client.isIE()) {
 			var img = params.image;
 			if (amount < 0) {
 				img.style.filter += " light()";
@@ -1989,7 +2020,7 @@ Pixastic.Actions.lighten = {
 			return true;
 		}
 	},
-	checkSupport : function() {
+	checkSupport() {
 		return (Pixastic.Client.hasCanvasImageData() || Pixastic.Client.isIE());
 	}
 }
@@ -2001,7 +2032,7 @@ Pixastic.Actions.lighten = {
 
 Pixastic.Actions.mosaic = {
 
-	process : function(params) {
+	process(params) {
 		var blockSize = Math.max(1,parseInt(params.options.blockSize,10));
 
 		if (Pixastic.Client.hasCanvasImageData()) {
@@ -2044,7 +2075,7 @@ Pixastic.Actions.mosaic = {
 			return true;
 		}
 	},
-	checkSupport : function() {
+	checkSupport() {
 		return (Pixastic.Client.hasCanvasImageData());
 	}
 }/*
@@ -2055,7 +2086,7 @@ Pixastic.Actions.mosaic = {
 
 Pixastic.Actions.noise = {
 
-	process : function(params) {
+	process(params) {
 		var amount = 0;
 		var strength = 0;
 		var mono = false;
@@ -2115,7 +2146,7 @@ Pixastic.Actions.noise = {
 			return true;
 		}
 	},
-	checkSupport : function() {
+	checkSupport() {
 		return Pixastic.Client.hasCanvasImageData();
 	}
 }
@@ -2128,7 +2159,7 @@ Pixastic.Actions.noise = {
 
 Pixastic.Actions.posterize = {
 
-	process : function(params) {
+	process(params) {
 
 		
 		var numLevels = 256;
@@ -2171,7 +2202,7 @@ Pixastic.Actions.posterize = {
 			return true;
 		}
 	},
-	checkSupport : function() {
+	checkSupport() {
 		return Pixastic.Client.hasCanvasImageData();
 	}
 }
@@ -2185,7 +2216,7 @@ Pixastic.Actions.posterize = {
 
 Pixastic.Actions.pointillize = {
 
-	process : function(params) {
+	process(params) {
 		var radius = Math.max(1,parseInt(params.options.radius,10));
 		var density = Math.min(5,Math.max(0,parseFloat(params.options.density)||0));
 		var noise = Math.max(0,parseFloat(params.options.noise)||0);
@@ -2264,7 +2295,7 @@ Pixastic.Actions.pointillize = {
 			return true;
 		}
 	},
-	checkSupport : function() {
+	checkSupport() {
 		return (Pixastic.Client.hasCanvasImageData());
 	}
 }/*
@@ -2274,7 +2305,7 @@ Pixastic.Actions.pointillize = {
  */
 
 Pixastic.Actions.removenoise = {
-	process : function(params) {
+	process(params) {
 
 		if (Pixastic.Client.hasCanvasImageData()) {
 			var data = Pixastic.prepareData(params);
@@ -2296,63 +2327,73 @@ Pixastic.Actions.removenoise = {
 
 				var x = w;
 				do {
-					var offset = offsetY + (x*4-4);
+                    var offset = offsetY + (x*4-4);
 
-					var offsetPrev = offsetYPrev + ((x == 1) ? 0 : x-2) * 4;
-					var offsetNext = offsetYNext + ((x == w) ? x-1 : x) * 4;
+                    var offsetPrev = offsetYPrev + ((x == 1) ? 0 : x-2) * 4;
+                    var offsetNext = offsetYNext + ((x == w) ? x-1 : x) * 4;
 
-					var minR, maxR, minG, maxG, minB, maxB;
+                    var minR;
+                    var maxR;
+                    var minG;
+                    var maxG;
+                    var minB;
+                    var maxB;
 
-					minR = maxR = data[offsetPrev];
-					var r1 = data[offset-4], r2 = data[offset+4], r3 = data[offsetNext];
-					if (r1 < minR) minR = r1;
-					if (r2 < minR) minR = r2;
-					if (r3 < minR) minR = r3;
-					if (r1 > maxR) maxR = r1;
-					if (r2 > maxR) maxR = r2;
-					if (r3 > maxR) maxR = r3;
+                    minR = maxR = data[offsetPrev];
+                    var r1 = data[offset-4];
+                    var r2 = data[offset+4];
+                    var r3 = data[offsetNext];
+                    if (r1 < minR) minR = r1;
+                    if (r2 < minR) minR = r2;
+                    if (r3 < minR) minR = r3;
+                    if (r1 > maxR) maxR = r1;
+                    if (r2 > maxR) maxR = r2;
+                    if (r3 > maxR) maxR = r3;
 
-					minG = maxG = data[offsetPrev+1];
-					var g1 = data[offset-3], g2 = data[offset+5], g3 = data[offsetNext+1];
-					if (g1 < minG) minG = g1;
-					if (g2 < minG) minG = g2;
-					if (g3 < minG) minG = g3;
-					if (g1 > maxG) maxG = g1;
-					if (g2 > maxG) maxG = g2;
-					if (g3 > maxG) maxG = g3;
+                    minG = maxG = data[offsetPrev+1];
+                    var g1 = data[offset-3];
+                    var g2 = data[offset+5];
+                    var g3 = data[offsetNext+1];
+                    if (g1 < minG) minG = g1;
+                    if (g2 < minG) minG = g2;
+                    if (g3 < minG) minG = g3;
+                    if (g1 > maxG) maxG = g1;
+                    if (g2 > maxG) maxG = g2;
+                    if (g3 > maxG) maxG = g3;
 
-					minB = maxB = data[offsetPrev+2];
-					var b1 = data[offset-2], b2 = data[offset+6], b3 = data[offsetNext+2];
-					if (b1 < minB) minB = b1;
-					if (b2 < minB) minB = b2;
-					if (b3 < minB) minB = b3;
-					if (b1 > maxB) maxB = b1;
-					if (b2 > maxB) maxB = b2;
-					if (b3 > maxB) maxB = b3;
+                    minB = maxB = data[offsetPrev+2];
+                    var b1 = data[offset-2];
+                    var b2 = data[offset+6];
+                    var b3 = data[offsetNext+2];
+                    if (b1 < minB) minB = b1;
+                    if (b2 < minB) minB = b2;
+                    if (b3 < minB) minB = b3;
+                    if (b1 > maxB) maxB = b1;
+                    if (b2 > maxB) maxB = b2;
+                    if (b3 > maxB) maxB = b3;
 
-					if (data[offset] > maxR) {
+                    if (data[offset] > maxR) {
 						data[offset] = maxR;
 					} else if (data[offset] < minR) {
 						data[offset] = minR;
 					}
-					if (data[offset+1] > maxG) {
+                    if (data[offset+1] > maxG) {
 						data[offset+1] = maxG;
 					} else if (data[offset+1] < minG) {
 						data[offset+1] = minG;
 					}
-					if (data[offset+2] > maxB) {
+                    if (data[offset+2] > maxB) {
 						data[offset+2] = maxB;
 					} else if (data[offset+2] < minB) {
 						data[offset+2] = minB;
 					}
-
-				} while (--x);
+                } while (--x);
 			} while (--y);
 
 			return true;
 		}
 	},
-	checkSupport : function() {
+	checkSupport() {
 		return Pixastic.Client.hasCanvasImageData();
 	}
 }/*
@@ -2362,7 +2403,7 @@ Pixastic.Actions.removenoise = {
  */
 
 Pixastic.Actions.resize = {
-	process : function(params) {
+	process(params) {
 		if (Pixastic.Client.hasCanvas()) {
 			var width = parseInt(params.options.width,10);
 			var height = parseInt(params.options.height,10);
@@ -2385,7 +2426,7 @@ Pixastic.Actions.resize = {
 			return true;
 		}
 	},
-	checkSupport : function() {
+	checkSupport() {
 		return Pixastic.Client.hasCanvas();
 	}
 }
@@ -2398,7 +2439,7 @@ Pixastic.Actions.resize = {
  */
 
 Pixastic.Actions.rotate = {
-	process : function(params) {
+	process(params) {
 		if (Pixastic.Client.hasCanvas()) {
 			var canvas = params.canvas;
 
@@ -2438,7 +2479,7 @@ Pixastic.Actions.rotate = {
 			return true;
 		}
 	},
-	checkSupport : function() {
+	checkSupport() {
 		return Pixastic.Client.hasCanvas();
 	}
 }
@@ -2452,7 +2493,7 @@ Pixastic.Actions.rotate = {
 
 Pixastic.Actions.sepia = {
 
-	process : function(params) {
+	process(params) {
 		var mode = (parseInt(params.options.mode,10)||0);
 		if (mode < 0) mode = 0;
 		if (mode > 1) mode = 1;
@@ -2500,7 +2541,7 @@ Pixastic.Actions.sepia = {
 			return true;
 		}
 	},
-	checkSupport : function() {
+	checkSupport() {
 		return Pixastic.Client.hasCanvasImageData();
 	}
 }/*
@@ -2510,7 +2551,7 @@ Pixastic.Actions.sepia = {
  */
 
 Pixastic.Actions.sharpen = {
-	process : function(params) {
+	process(params) {
 
 		var strength = 0;
 		if (typeof params.options.amount != "undefined")
@@ -2609,7 +2650,7 @@ Pixastic.Actions.sharpen = {
 
 		}
 	},
-	checkSupport : function() {
+	checkSupport() {
 		return Pixastic.Client.hasCanvasImageData();
 	}
 }
@@ -2621,7 +2662,7 @@ Pixastic.Actions.sharpen = {
 
 Pixastic.Actions.solarize = {
 
-	process : function(params) {
+	process(params) {
 		var useAverage = !!(params.options.average && params.options.average != "false");
 
 		if (Pixastic.Client.hasCanvasImageData()) {
@@ -2654,7 +2695,7 @@ Pixastic.Actions.solarize = {
 			return true;
 		}
 	},
-	checkSupport : function() {
+	checkSupport() {
 		return (Pixastic.Client.hasCanvasImageData());
 	}
 }/*
@@ -2665,7 +2706,7 @@ Pixastic.Actions.solarize = {
 
 
 Pixastic.Actions.unsharpmask = {
-	process : function(params) {
+	process(params) {
 
 		var amount = (parseFloat(params.options.amount)||0);
 		var blurAmount = parseFloat(params.options.radius)||0;
@@ -2761,7 +2802,7 @@ Pixastic.Actions.unsharpmask = {
 			return true;
 		}
 	},
-	checkSupport : function() {
+	checkSupport() {
 		return Pixastic.Client.hasCanvasImageData();
 	}
 }

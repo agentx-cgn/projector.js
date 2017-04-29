@@ -19,8 +19,7 @@
  * @version 1.2
  * @url craig.is/killing/mice
  */
-(function() {
-
+((() => {
     /**
      * mapping of special keycodes to their corresponding keys
      *
@@ -53,132 +52,132 @@
             91: 'meta',
             93: 'meta',
             224: 'meta'
-        },
+        };
 
-        /**
-         * mapping for special characters so they can support
-         *
-         * this dictionary is only used incase you want to bind a
-         * keyup or keydown event to one of these keys
-         *
-         * @type {Object}
-         */
-        _KEYCODE_MAP = {
-            106: '*',
-            107: '+',
-            109: '-',
-            110: '.',
-            111 : '/',
-            186: ';',
-            187: '=',
-            188: ',',
-            189: '-',
-            190: '.',
-            191: '/',
-            192: '`',
-            219: '[',
-            220: '\\',
-            221: ']',
-            222: '\''
-        },
+    var /**
+     * mapping for special characters so they can support
+     *
+     * this dictionary is only used incase you want to bind a
+     * keyup or keydown event to one of these keys
+     *
+     * @type {Object}
+     */
+    _KEYCODE_MAP = {
+        106: '*',
+        107: '+',
+        109: '-',
+        110: '.',
+        111 : '/',
+        186: ';',
+        187: '=',
+        188: ',',
+        189: '-',
+        190: '.',
+        191: '/',
+        192: '`',
+        219: '[',
+        220: '\\',
+        221: ']',
+        222: '\''
+    };
 
-        /**
-         * this is a mapping of keys that require shift on a US keypad
-         * back to the non shift equivelents
-         *
-         * this is so you can use keyup events with these keys
-         *
-         * note that this will only work reliably on US keyboards
-         *
-         * @type {Object}
-         */
-        _SHIFT_MAP = {
-            '~': '`',
-            '!': '1',
-            '@': '2',
-            '#': '3',
-            '$': '4',
-            '%': '5',
-            '^': '6',
-            '&': '7',
-            '*': '8',
-            '(': '9',
-            ')': '0',
-            '_': '-',
-            '+': '=',
-            ':': ';',
-            '\"': '\'',
-            '<': ',',
-            '>': '.',
-            '?': '/',
-            '|': '\\'
-        },
+    var /**
+     * this is a mapping of keys that require shift on a US keypad
+     * back to the non shift equivelents
+     *
+     * this is so you can use keyup events with these keys
+     *
+     * note that this will only work reliably on US keyboards
+     *
+     * @type {Object}
+     */
+    _SHIFT_MAP = {
+        '~': '`',
+        '!': '1',
+        '@': '2',
+        '#': '3',
+        '$': '4',
+        '%': '5',
+        '^': '6',
+        '&': '7',
+        '*': '8',
+        '(': '9',
+        ')': '0',
+        '_': '-',
+        '+': '=',
+        ':': ';',
+        '\"': '\'',
+        '<': ',',
+        '>': '.',
+        '?': '/',
+        '|': '\\'
+    };
 
-        /**
-         * this is a list of special strings you can use to map
-         * to modifier keys when you specify your keyboard shortcuts
-         *
-         * @type {Object}
-         */
-        _SPECIAL_ALIASES = {
-            'option': 'alt',
-            'command': 'meta',
-            'return': 'enter',
-            'escape': 'esc'
-        },
+    var /**
+     * this is a list of special strings you can use to map
+     * to modifier keys when you specify your keyboard shortcuts
+     *
+     * @type {Object}
+     */
+    _SPECIAL_ALIASES = {
+        'option': 'alt',
+        'command': 'meta',
+        'return': 'enter',
+        'escape': 'esc'
+    };
 
-        /**
-         * variable to store the flipped version of _MAP from above
-         * needed to check if we should use keypress or not when no action
-         * is specified
-         *
-         * @type {Object|undefined}
-         */
-        _REVERSE_MAP,
+    var /**
+     * variable to store the flipped version of _MAP from above
+     * needed to check if we should use keypress or not when no action
+     * is specified
+     *
+     * @type {Object|undefined}
+     */
+    _REVERSE_MAP;
 
-        /**
-         * a list of all the callbacks setup via Mousetrap.bind()
-         *
-         * @type {Object}
-         */
-        _callbacks = {},
+    var /**
+     * a list of all the callbacks setup via Mousetrap.bind()
+     *
+     * @type {Object}
+     */
+    _callbacks = {};
 
-        /**
-         * direct map of string combinations to callbacks used for trigger()
-         *
-         * @type {Object}
-         */
-        _direct_map = {},
+    var /**
+     * direct map of string combinations to callbacks used for trigger()
+     *
+     * @type {Object}
+     */
+    _direct_map = {};
 
-        /**
-         * keeps track of what level each sequence is at since multiple
-         * sequences can start out with the same sequence
-         *
-         * @type {Object}
-         */
-        _sequence_levels = {},
+    var /**
+     * keeps track of what level each sequence is at since multiple
+     * sequences can start out with the same sequence
+     *
+     * @type {Object}
+     */
+    _sequence_levels = {};
 
-        /**
-         * variable to store the setTimeout call
-         *
-         * @type {null|number}
-         */
-        _reset_timer,
+    var /**
+     * variable to store the setTimeout call
+     *
+     * @type {null|number}
+     */
+    _reset_timer;
 
-        /**
-         * temporary state where we will ignore the next keyup
-         *
-         * @type {boolean|string}
-         */
-        _ignore_next_keyup = false,
+    var /**
+     * temporary state where we will ignore the next keyup
+     *
+     * @type {boolean|string}
+     */
+    _ignore_next_keyup = false;
 
-        /**
-         * are we currently inside of a sequence?
-         * type of action ("keyup" or "keydown" or "keypress") or false
-         *
-         * @type {boolean|string}
-         */
-        _inside_sequence = false;
+    var /**
+     * are we currently inside of a sequence?
+     * type of action ("keyup" or "keydown" or "keypress") or false
+     *
+     * @type {boolean|string}
+     */
+    _inside_sequence = false;
 
     /**
      * loop through the f keys, f1 to f19 and add them to the map
@@ -258,8 +257,8 @@
     function _resetSequences(do_not_reset) {
         do_not_reset = do_not_reset || {};
 
-        var active_sequences = false,
-            key;
+        var active_sequences = false;
+        var key;
 
         for (key in _sequence_levels) {
             if (do_not_reset[key]) {
@@ -286,10 +285,10 @@
      * @returns {Array}
      */
     function _getMatches(character, modifiers, e, remove, combination) {
-        var i,
-            callback,
-            matches = [],
-            action = e.type;
+        var i;
+        var callback;
+        var matches = [];
+        var action = e.type;
 
         // if there are no events related to this keycode
         if (!_callbacks[character]) {
@@ -407,10 +406,10 @@
      * @returns void
      */
     function _handleCharacter(character, e) {
-        var callbacks = _getMatches(character, _eventModifiers(e), e),
-            i,
-            do_not_reset = {},
-            processed_sequence_callback = false;
+        var callbacks = _getMatches(character, _eventModifiers(e), e);
+        var i;
+        var do_not_reset = {};
+        var processed_sequence_callback = false;
 
         // loop through matching callbacks for this key event
         for (i = 0; i < callbacks.length; ++i) {
@@ -555,7 +554,6 @@
      * @returns void
      */
     function _bindSequence(combo, keys, callback, action) {
-
         // start off by adding a sequence level record for this combination
         // and setting the level to 0
         _sequence_levels[combo] = 0;
@@ -573,34 +571,35 @@
          * @param {Event} e
          * @returns void
          */
-        var _increaseSequence = function(e) {
+        var _increaseSequence = e => {
                 _inside_sequence = action;
                 ++_sequence_levels[combo];
                 _resetSequenceTimer();
-            },
+            };
 
-            /**
-             * wraps the specified callback inside of another function in order
-             * to reset all sequence counters as soon as this sequence is done
-             *
-             * @param {Event} e
-             * @returns void
-             */
-            _callbackAndReset = function(e) {
-                _fireCallback(callback, e, combo);
+        var /**
+         * wraps the specified callback inside of another function in order
+         * to reset all sequence counters as soon as this sequence is done
+         *
+         * @param {Event} e
+         * @returns void
+         */
+        _callbackAndReset = e => {
+            _fireCallback(callback, e, combo);
 
-                // we should ignore the next key up if the action is key down
-                // or keypress.  this is so if you finish a sequence and
-                // release the key the final key will not trigger a keyup
-                if (action !== 'keyup') {
-                    _ignore_next_keyup = _characterFromEvent(e);
-                }
+            // we should ignore the next key up if the action is key down
+            // or keypress.  this is so if you finish a sequence and
+            // release the key the final key will not trigger a keyup
+            if (action !== 'keyup') {
+                _ignore_next_keyup = _characterFromEvent(e);
+            }
 
-                // weird race condition if a sequence ends with the key
-                // another sequence begins with
-                setTimeout(_resetSequences, 10);
-            },
-            i;
+            // weird race condition if a sequence ends with the key
+            // another sequence begins with
+            setTimeout(_resetSequences, 10);
+        };
+
+        var i;
 
         // loop through keys one at a time and bind the appropriate callback
         // function.  for any key leading up to the final one it should
@@ -621,15 +620,14 @@
      * @returns void
      */
     function _bindSingle(combination, callback, action, sequence_name, level) {
-
         // make sure multiple spaces in a row become a single space
         combination = combination.replace(/\s+/g, ' ');
 
-        var sequence = combination.split(' '),
-            i,
-            key,
-            keys,
-            modifiers = [];
+        var sequence = combination.split(' ');
+        var i;
+        var key;
+        var keys;
+        var modifiers = [];
 
         // if this pattern is a sequence of keys then run through this method
         // to reprocess each pattern one key at a time
@@ -684,11 +682,11 @@
         // this is important because the way these are processed expects
         // the sequence ones to come first
         _callbacks[key][sequence_name ? 'unshift' : 'push']({
-            callback: callback,
-            modifiers: modifiers,
-            action: action,
+            callback,
+            modifiers,
+            action,
             seq: sequence_name,
-            level: level,
+            level,
             combo: combination
         });
     }
@@ -728,7 +726,7 @@
          * @param {string=} action - 'keypress', 'keydown', or 'keyup'
          * @returns void
          */
-        bind: function(keys, callback, action) {
+        bind(keys, callback, action) {
             _bindMultiple(keys instanceof Array ? keys : [keys], callback, action);
             _direct_map[keys + ':' + action] = callback;
             return this;
@@ -751,10 +749,10 @@
          * @param {string} action
          * @returns void
          */
-        unbind: function(keys, action) {
+        unbind(keys, action) {
             if (_direct_map[keys + ':' + action]) {
                 delete _direct_map[keys + ':' + action];
-                this.bind(keys, function() {}, action);
+                this.bind(keys, () => {}, action);
             }
             return this;
         },
@@ -766,7 +764,7 @@
          * @param {string=} action
          * @returns void
          */
-        trigger: function(keys, action) {
+        trigger(keys, action) {
             _direct_map[keys + ':' + action]();
             return this;
         },
@@ -778,7 +776,7 @@
          *
          * @returns void
          */
-        reset: function() {
+        reset() {
             _callbacks = {};
             _direct_map = {};
             return this;
@@ -791,7 +789,7 @@
         * @param {Element} element
         * @return {boolean}
         */
-        stopCallback: function(e, element, combo) {
+        stopCallback(e, element, combo) {
 
             // if the element has the class "mousetrap" then no need to stop
             if ((' ' + element.className + ' ').indexOf(' mousetrap ') > -1) {
@@ -808,6 +806,6 @@
 
     // expose mousetrap as an AMD module
     if (typeof define === 'function' && define.amd) {
-        define('mousetrap', function() { return Mousetrap; });
+        define('mousetrap', () => Mousetrap);
     }
-}) ();
+})) ();

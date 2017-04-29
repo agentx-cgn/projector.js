@@ -21,115 +21,114 @@ sec   ???
 
 */
 
-var DPCS = (function(){
+var DPCS = ((() => {
+  var self;
+  var max = Math.max;
+  var min = Math.min;
+  var dynamics = [];
+  var framesPerSecond;
+  var dyn;
+  var DYN =  1;
+  var spc;
+  var SPC =  2;
+  var vol;
+  var VOL =  3;
+  var sin;
+  var SIN =  4;
+  var cos;
+  var COS =  5;
+  var rnd;
+  var RND =  6;
+  var bdt;
+  var BDT =  7;
+  var mox;
+  var MOX =  8;
+  var bufMX;
+  var moy;
+  var MOY =  9;
+  var bufMY;
+  var sec;
+  var SEC = 10;
+  var frm;
+  var FRM = 1000;
+  var fps;
+  var FPS = 1001;
+  var lastBeatCount;
+  var lastBctFrame;
 
-  var self,
+  var dynaValue = what => (what === DYN) ? dyn :
+  (what === SPC) ? spc :
+  (what === VOL) ? vol :
+  (what === SIN) ? sin :
+  (what === COS) ? cos :
+  (what === RND) ? rnd :
+  (what === BDT) ? bdt :
+  (what === MOX) ? mox :
+  (what === MOY) ? moy :
+  (what === SEC) ? sec :
+    0.5;
 
-      max = Math.max, min = Math.min,
+  var build = () => {
 
-      dynamics = [],
+    var p, para, params, t, targets;
+    params  = ["dyn", "spc", "vol", "sin", "cos", "rnd", "bdt", "mox", "moy", "sec"];
+    targets = {
+      "a": "fnDim", 
+      "d": "fnDim", 
+      "f": "fnFlt", 
+      "r": "fnRot", 
+      "c": "fnCol", // maps on color range
+      "s": "fnSpe"  // maps seconds on range
+    };
 
-      framesPerSecond, 
+    for (p in params){
+      para = params[p];
+      for (t in targets){
+        dynamics.push(para+t);
+        self[para+t] = new Function("p1", "p2", 
+          "return DPCS." + targets[t] + "(" + (~~p+1) + ", p1, p2);");
+      }
+    }
 
-      dyn, DYN =  1,
-      spc, SPC =  2,
-      vol, VOL =  3,
-      sin, SIN =  4,
-      cos, COS =  5,
-      rnd, RND =  6,
-      bdt, BDT =  7,
-      mox, MOX =  8, bufMX, 
-      moy, MOY =  9, bufMY,  
-      sec, SEC = 10,
-      
-      frm, FRM = 1000,
-      fps, FPS = 1001,
+  };
 
-      lastBeatCount,
-      lastBctFrame,
+  var scale = (what, dMin, dMax, cMin, cMax) => () => {
+    var x = ((cMax-cMin)*(dynaValue(what)-dMin)/(dMax-dMin)+cMin);
+    // console.log(sec, dMin, dMax, cMin, cMax, x);
+    return x ;};
 
-      dynaValue = function (what){
-        return  (
-          (what === DYN) ? dyn :
-          (what === SPC) ? spc :
-          (what === VOL) ? vol :
-          (what === SIN) ? sin :
-          (what === COS) ? cos :
-          (what === RND) ? rnd :
-          (what === BDT) ? bdt :
-          (what === MOX) ? mox :
-          (what === MOY) ? moy :
-          (what === SEC) ? sec :
-            0.5);
-      },
-      build = function(){
+  var clamp = (val, minVal, maxVal) => max(min(val, maxVal), minVal);
 
-        var p, para, params, t, targets;
-        params  = ["dyn", "spc", "vol", "sin", "cos", "rnd", "bdt", "mox", "moy", "sec"];
-        targets = {
-          "a": "fnDim", 
-          "d": "fnDim", 
-          "f": "fnFlt", 
-          "r": "fnRot", 
-          "c": "fnCol", // maps on color range
-          "s": "fnSpe"  // maps seconds on range
-        };
+  var scale_0_255_LU = (what, outLow, outUpp) => () => {
+    var x = (outUpp-outLow) * dynaValue(what) / 255 + outLow; 
+    // if(what === 8){console.log(what, outLow, outUpp);}
+    return x ;};
 
-        for (p in params){
-          para = params[p];
-          for (t in targets){
-            dynamics.push(para+t);
-            self[para+t] = new Function("p1", "p2", 
-              "return DPCS." + targets[t] + "(" + (~~p+1) + ", p1, p2);");
-          }
-        }
-
-      },
-      scale = function (what, dMin, dMax, cMin, cMax){
-        return function(){
-          var x = ((cMax-cMin)*(dynaValue(what)-dMin)/(dMax-dMin)+cMin);
-          // console.log(sec, dMin, dMax, cMin, cMax, x);
-          return x ;};},
-
-      clamp = function (val, minVal, maxVal){
-        return max(min(val, maxVal), minVal);},
-
-      scale_0_255_LU = function(what, outLow, outUpp){
-        return function(){
-          var x = (outUpp-outLow) * dynaValue(what) / 255 + outLow; 
-          // if(what === 8){console.log(what, outLow, outUpp);}
-          return x ;};},
-
-      range256Lookup = function(what, range){
-        return function(){
-          return range[~~dynaValue(what)];};}
-
-      ;
+  var range256Lookup = (what, range) => () => range[~~dynaValue(what)];
 
   return {
     dynas: dynamics,
-    boot: function(){
+    boot() {
       self = this;
       build();
       return this;
     },
-    init: function(){
+    init() {
       framesPerSecond = Projector.fps;
       bufMX = createRingBuffer(~~(framesPerSecond/2));
       bufMY = createRingBuffer(~~(framesPerSecond/2));
     },
-    tick: function(fr, mx, my){
-
-      var ap  = AudioPlayer,
-          bd  = (ap.BeatDetector) ? ap.BeatDetector : {beat_counter: 0, win_bpm_int:0}
-          bpm = bd.win_bpm_int/10;    
+    tick(fr, mx, my) {
+      var ap  = AudioPlayer;
+      var bd  = (ap.BeatDetector) ? ap.BeatDetector : {beat_counter: 0, win_bpm_int:0};
+      bpm = bd.win_bpm_int/10;
 
       // whatever
       frm = fr;
 
       // 0-1
-      bufMX.push((mx >= 0) ? mx*255 : 127); mox = bufMX.avg(); 
-      bufMY.push((my >= 0) ? my*255 : 127); moy = bufMY.avg(); 
+      bufMX.push((mx >= 0) ? mx*255 : 127);mox = bufMX.avg();
+      bufMY.push((my >= 0) ? my*255 : 127);moy = bufMY.avg();
 
       sec = window.performance.now()/1000 - ~~(window.performance.now()/1000);
 
@@ -148,39 +147,36 @@ var DPCS = (function(){
         bdt = bdt-255/(fps*60/bpm*0.8); // roughly good
         bdt = (bdt < 0) ? 0 : bdt;
       }
-
-
     },
-    fnFlt: function (p, p1, p2){
+    fnFlt(p, p1, p2) {
       if (!p2){p2=p1; p1=0;}
       return scale_0_255_LU(p, p1, p2);
     },
-    fnDim: function (p, p1, p2){
+    fnDim(p, p1, p2) {
       p1 = clamp(p1 || 0, 0, 1);
       p2 = clamp(p2 || 1, 0, 1);
       return scale_0_255_LU(p, p1, p2);
     },
-    fnRot: function (p, p1, p2){
+    fnRot(p, p1, p2) {
       p1 = clamp(p1 ||   0, 0, 360);
       p2 = clamp(p2 || 360, 0, 360);
       return scale_0_255_LU(p, p1, p2);
     },
-    fnCol: function (what, range){
-      return function(){
+    fnCol(what, range) {
+      return () => {
         var x = range[~~dynaValue(what)]; 
         // console.log(x, what);
         return x;
       };
     },
-    fnSpe: function (p, p1, p2){
+    fnSpe(p, p1, p2) {
       p1 = clamp(p1 || 1, 0, 1000);
       p2 = clamp(p2 || 1, 0, 1000);
       return scale(p, 0, p1, 0, p2);
     }
 
   }; // return
-
-})().boot();  
+}))().boot();  
 
 
 

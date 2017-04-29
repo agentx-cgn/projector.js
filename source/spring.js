@@ -133,7 +133,7 @@ mSpring.prototype.getSpringParameters = function () {
 mSpring.prototype.setStepTrigger = function () {
 	var spring = this;
 	clearTimeout(spring.stepTrigger);
-	spring.stepTrigger = setTimeout(function () {spring.step()}, spring.interval);
+	spring.stepTrigger = setTimeout(() => {spring.step()}, spring.interval);
 }
 
 

@@ -1,127 +1,135 @@
 /*jslint bitwise: true, browser: true, evil:true, devel: true, debug: true, nomen: true, plusplus: true, sloppy: true, vars: true, white: true, indent: 2 */
 /*globals  Loader, H, async, createRingBuffer, requestAnimationFrame, TWEEN, AudioPlayer, Element, Mousetrap, Hotspots, DPCS, DB, EFX, TIM */
 
-var Projector = (function(){
+var Projector = ((() => {
+  var i;
+  var self;
+  var width;
+  var height;
+  var cvs;
+  var ctx;
+  var help;
+  var version = "0.5.0";
+  var overlay  = {ctx: null, cvs: null};
+  var doMaxFrames = 0;
+  var doRender = true;
+  var doAnimate = true;
+  var doClear = true;
+  var showDebug = false;
+  var showHelp = false;
+  var showSpots = false;
+  var showAudio = false;
+  var showOutline = false;
+  var hasFocus = true;
+  var isFullScreen = false;
+  var showDPCS = true;
+  var shows = {};
+  var curShow;
+  var hasShowLoaded = false;
+  var compos = [];
+  var curCompo = 0;
+  var filters = [];
+  var menu = [];
+  var tickActions = [];
 
-  var i, self, width, height, cvs, ctx, help, 
+  var // ogg/mp4
+  videoextension;
 
-      version = "0.5.0",
+  var message = {
+    command: null,
+    parent: null,
+    filters: [],
+    ctx: null, 
+    frame: null, 
+    sector: null
+  };
 
-      overlay  = {ctx: null, cvs: null},
+  var test = {};
 
-      doMaxFrames = 0,
+  var tim = {
+    rate: 30, rends: 0, anims: 0,
+    tsAnim: 0, tsRend: 0, msAnim: 0, msRend: 0,
+    bfAnim: createRingBuffer(30),
+    bfRend: createRingBuffer(30),
+    bfFram: createRingBuffer(30)
+  };
 
-      doRender = true, doAnimate = true, doClear = true, 
-      showDebug = false, showHelp = false, showSpots = false,
-      showAudio = false, showOutline = false,
-      hasFocus = true, isFullScreen = false,
+  var mouse = {
+    x: -1000, y: -1000,
+    last: {x: -1000, y: -1000},
+    down: false,
+    maybeClick: false,
+    button: null,
+    transpic: "url(media/mouse-transparent.png), pointer",
+    event: null,
+    keys: {shift:false, ctrl: false, alt:false, extra: false}
+  };
 
-      showDPCS = true,
+  var padding = 16;
+  var colorTrans = "rgba(0, 0, 0, 0)";
 
-      shows = {},
-      curShow,
-      hasShowLoaded = false,
-      compos = [], curCompo = 0, filters = [], menu = [],
+  function eat(e){
+    e.stopPropagation();
+    e.preventDefault();
+    e.returnValue = false;
+    return false;
+  }
 
-      tickActions = [],
+  function r (n, p){var e = 10 ** (p || 1); return ~~(n*e)/e;}
+  function error (e, device, msg ){return {event: e, device, message: msg};}
 
-      videoextension, // ogg/mp4
+  function toggleHidden(){
+    var ps = document.getElementById("projector").style;
+    var hs = document.getElementById("hidden").style;
 
-      message = {
-        command: null,
-        parent: null,
-        filters: [],
-        ctx: null, 
-        frame: null, 
-        sector: null
-      },
+    if (ps.display !== "none"){
+      ps.display = "none";
+      hs.display = "block";
+    } else {
+      ps.display = "block";
+      hs.display = "none";
+    }
+  }
+  function toggleEditor(){
+    var ps = document.getElementById("projector").style;
+    var es = document.getElementById("editor").style;
 
-      test = {}, 
-
-      tim = {
-        rate: 30, rends: 0, anims: 0,
-        tsAnim: 0, tsRend: 0, msAnim: 0, msRend: 0,
-        bfAnim: createRingBuffer(30),
-        bfRend: createRingBuffer(30),
-        bfFram: createRingBuffer(30)
-      },
-
-      mouse = {
-        x: -1000, y: -1000,
-        last: {x: -1000, y: -1000},
-        down: false,
-        maybeClick: false,
-        button: null,
-        transpic: "url(media/mouse-transparent.png), pointer",
-        event: null,
-        keys: {shift:false, ctrl: false, alt:false, extra: false}
-      },
-
-      padding = 16,
-      colorTrans = "rgba(0, 0, 0, 0)";
-
-      function eat(e){
-        e.stopPropagation();
-        e.preventDefault();
-        e.returnValue = false;
-        return false;
-      }
-
-      function r (n, p){var e = Math.pow(10, p || 1); return ~~(n*e)/e;}
-      function error (e, device, msg ){return {event: e, device: device, message: msg};}
-
-      function toggleHidden(){
-        var ps = document.getElementById("projector").style,
-            hs = document.getElementById("hidden").style;
-
-        if (ps.display !== "none"){
-          ps.display = "none";
-          hs.display = "block";
-        } else {
-          ps.display = "block";
-          hs.display = "none";
-        }
-      }
-      function toggleEditor(){
-        var ps = document.getElementById("projector").style,
-            es = document.getElementById("editor").style;
-
-        if (ps.display !== "none"){
-          ps.display = "none";
-          es.display = "block";
-        } else {
-          ps.display = "block";
-          es.display = "none";
-        }
-      }
+    if (ps.display !== "none"){
+      ps.display = "none";
+      es.display = "block";
+    } else {
+      ps.display = "block";
+      es.display = "none";
+    }
+  }
 
   return {
     name: "Projector",
-    init: function(){
+    init() {
 
       self = this;
 
-      this.__defineGetter__('version', function(){return version;});
-      this.__defineGetter__('source',  function(){return cvs;});
-      this.__defineGetter__('mouse',   function(){return mouse;});
-      this.__defineGetter__('frame',   function(){return tim.rends;});
-      this.__defineGetter__('fps',     function(){return tim.rate;});
-      this.__defineGetter__('shows',   function(){return shows;});
-      this.__defineGetter__('show',    function(){return curShow;});
-      this.__defineGetter__('filters', function(){return filters;});
-      this.__defineGetter__('compos',  function(){return compos;});
-      this.__defineGetter__('compo',   function(){return compos[curCompo];});
-      this.__defineGetter__('menu',    function(){return menu;});
-      this.__defineGetter__('width',   function(){return width;});
-      this.__defineGetter__('height',  function(){return height;});
-      this.__defineGetter__('ctx',     function(){return ctx;});
-      this.__defineGetter__('videoextension', function(){return videoextension;});
-      this.__defineGetter__('audioplayer',    function(){return AudioPlayer;});
+      this.__defineGetter__('version', () => version);
+      this.__defineGetter__('source',  () => cvs);
+      this.__defineGetter__('mouse',   () => mouse);
+      this.__defineGetter__('frame',   () => tim.rends);
+      this.__defineGetter__('fps',     () => tim.rate);
+      this.__defineGetter__('shows',   () => shows);
+      this.__defineGetter__('show',    () => curShow);
+      this.__defineGetter__('filters', () => filters);
+      this.__defineGetter__('compos',  () => compos);
+      this.__defineGetter__('compo',   () => compos[curCompo]);
+      this.__defineGetter__('menu',    () => menu);
+      this.__defineGetter__('width',   () => width);
+      this.__defineGetter__('height',  () => height);
+      this.__defineGetter__('ctx',     () => ctx);
+      this.__defineGetter__('videoextension', () => videoextension);
+      this.__defineGetter__('audioplayer',    () => AudioPlayer);
 
       return this;
 
     },
-    onresize: function(){
+    onresize() {
 
       width  = window.innerWidth;
       height = window.innerHeight;
@@ -138,15 +146,18 @@ var Projector = (function(){
       overlay.cvs.style.backgroundColor = "black"; // colorTrans;
 
       if (hasShowLoaded){
-        compos.forEach(function(cmp){
+        compos.forEach(cmp => {
           cmp.link(self);
         });
       }
 
     },
-    info: function (what) {
-
-      var f, filt, c, comp, sum = 0;
+    info(what) {
+      var f;
+      var filt;
+      var c;
+      var comp;
+      var sum = 0;
 
       if (what === "graph") {
         compos[curCompo].log();
@@ -172,14 +183,14 @@ var Projector = (function(){
         }
         console.log(~~(sum*100)/100 + " ms total");
       }
-
     },
     // renderSpots: function (ctx) {
 
     // },
-    renderText: function (ctx, s, l, t, a, c) {
-
-      var i = 0, lh = 12, lines = s.length;
+    renderText(ctx, s, l, t, a, c) {
+      var i = 0;
+      var lh = 12;
+      var lines = s.length;
       ctx.textAlign = a;
       ctx.fillStyle = c;
       // ctx.fillStyle = "rgba(255, 255, 0, 1)";
@@ -193,24 +204,27 @@ var Projector = (function(){
 
       }
       return t;
-
     },
-    renderDPCS: function(ctx){
-      var i,
-          t  = padding,
-          h  = 16,
-          ap = AudioPlayer,
-          db = ap.dynaband,
-          fft  = ap.dataDPCS,
-          len  = fft.length,
-          spec = (len*2-1)*ap.spectrum/255,
-          dyna = (h)*ap.dynamic/255,
-          volu = (h)*ap.volume/255,
-          vola = ap.avgvolume,
-          l    = width - padding - (len *2),
-          fpsq = h - (1000/tim.bfFram.avg()/tim.rate) *h,
-          bc   = ap.BeatCount % 4,
-          icon = "", il = l, it=t, iw=24, ih=24;
+    renderDPCS(ctx) {
+      var i;
+      var t  = padding;
+      var h  = 16;
+      var ap = AudioPlayer;
+      var db = ap.dynaband;
+      var fft  = ap.dataDPCS;
+      var len  = fft.length;
+      var spec = (len*2-1)*ap.spectrum/255;
+      var dyna = (h)*ap.dynamic/255;
+      var volu = (h)*ap.volume/255;
+      var vola = ap.avgvolume;
+      var l    = width - padding - (len *2);
+      var fpsq = h - (1000/tim.bfFram.avg()/tim.rate) *h;
+      var bc   = ap.BeatCount % 4;
+      var icon = "";
+      var il = l;
+      var it=t;
+      var iw=24;
+      var ih=24;
 
       if (typeof vola !== "number"){console.log(vola);}
 
@@ -260,17 +274,19 @@ var Projector = (function(){
       if (fpsq >  0.5) {
         ctx.fillStyle = "rgba(255, 0, 0, 1)";
         ctx.fillRect(l-6, t+h, 3, fpsq);}
-
-
-
     },
-    renderDebug: function(ctx){
-
-      var i, len, top, deb = [], 
-          fft, track = AudioPlayer.trackInfo,
-          ap = AudioPlayer,
-          bd  = (ap.BeatDetector) ? ap.BeatDetector : {beat_counter: 0, win_bpm_int:0},
-          cFps, cFPSQuality, cFPSJitter;
+    renderDebug(ctx) {
+      var i;
+      var len;
+      var top;
+      var deb = [];
+      var fft;
+      var track = AudioPlayer.trackInfo;
+      var ap = AudioPlayer;
+      var bd  = (ap.BeatDetector) ? ap.BeatDetector : {beat_counter: 0, win_bpm_int:0};
+      var cFps;
+      var cFPSQuality;
+      var cFPSJitter;
 
       if (showDebug === 0){
         // do nothing at all
@@ -336,15 +352,14 @@ var Projector = (function(){
 
       }
       top = self.renderText(ctx, deb, padding, padding, "left", curShow.colors.debug || "yellow");
-
     },
-    toggleMouse: function (what){
+    toggleMouse(what) {
       // cursor: url('data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAAAXNSR0IArs4c6QAAAARnQU1BAACxjwv8YQUAAAAJcEhZcwAADsMAAA7DAcdvqGQAAAAZdEVYdFNvZnR3YXJlAFBhaW50Lk5FVCB2My41LjbQg61aAAAADUlEQVQYV2P4//8/IwAI/QL/+TZZdwAAAABJRU5ErkJggg=='),
       // url(images/blank.cur),
       // none !important;
       console.log("P.toggleMouse", what);
     },
-    toggleAudio: function (param){
+    toggleAudio(param) {
 
       if (typeof param !== "undefined"){
         showAudio = !!param;} 
@@ -364,7 +379,7 @@ var Projector = (function(){
 //  
 //  
 // 
-    addTick:  function(frame, action){
+    addTick(frame, action) {
       if(frame < 1){
         action.frame = tim.rends - frame +1;
       } else {
@@ -373,9 +388,11 @@ var Projector = (function(){
       tickActions.push(action);
       // console.log(frame, tim.rends, action.frame, action);
     },
-    tick:  function(){
-
-      var i, action, del = [], len = tickActions.length;
+    tick() {
+      var i;
+      var action;
+      var del = [];
+      var len = tickActions.length;
 
       // execute on frame
       for (i=0; i<len; i++) {
@@ -391,7 +408,6 @@ var Projector = (function(){
       for (i=0; i<len; i++) {
         tickActions.splice(del[i], 1);
       }
-
     },
 
 
@@ -399,59 +415,59 @@ var Projector = (function(){
 //  
 //  
 // 
-    activate: function (){
+    activate() {
 
-      window.addEventListener("focus",  function(e){hasFocus = true;},  false);
-      window.addEventListener("blur",   function(e){hasFocus = false;}, false);
+      window.addEventListener("focus",  e => {hasFocus = true;},  false);
+      window.addEventListener("blur",   e => {hasFocus = false;}, false);
       window.addEventListener("resize", self.onresize, false);
       self.onresize();
 
       // hot keys
-      [[  'pageup',   function(e){tim.rate  = (tim.rate < 60) ? tim.rate +1 : 60; return eat(e); }
-      ],[ 'pagedown', function(e){tim.rate  = (tim.rate >  1) ? tim.rate -1 :  1; return eat(e); }
+      [[  'pageup',   e => {tim.rate  = (tim.rate < 60) ? tim.rate +1 : 60; return eat(e); }
+      ],[ 'pagedown', e => {tim.rate  = (tim.rate >  1) ? tim.rate -1 :  1; return eat(e); }
 
-      ],[ 'r r',      function(e){doAnimate   = !doAnimate; if (doAnimate) {self.animate();} return eat(e); }
-      ],[ 'r a',      function(e){doRender    = !doRender;     return eat(e); }
-      ],[ 'r c',      function(e){doClear     = !doClear;      return eat(e); }
-      ],[ 'r k',      function(e){showHelp    = !showHelp;     return eat(e); }
-      ],[ 'r d',      function(e){showDebug   = (showDebug < 3) ? showDebug +1 : 0;        return eat(e); }
-      ],[ 'r f',      function(e){cvs.RequestFullScreen(Element.ALLOW_KEYBOARD_INPUT);     return eat(e); }
-      ],[ 'r s s',    function(e){window.open( cvs.toDataURL('image/png'), 'screenshot' ); return eat(e); }
+      ],[ 'r r',      e => {doAnimate   = !doAnimate; if (doAnimate) {self.animate();} return eat(e); }
+      ],[ 'r a',      e => {doRender    = !doRender;     return eat(e); }
+      ],[ 'r c',      e => {doClear     = !doClear;      return eat(e); }
+      ],[ 'r k',      e => {showHelp    = !showHelp;     return eat(e); }
+      ],[ 'r d',      e => {showDebug   = (showDebug < 3) ? showDebug +1 : 0;        return eat(e); }
+      ],[ 'r f',      e => {cvs.RequestFullScreen(Element.ALLOW_KEYBOARD_INPUT);     return eat(e); }
+      ],[ 'r s s',    e => {window.open( cvs.toDataURL('image/png'), 'screenshot' ); return eat(e); }
 
-      ],[ 'a a',      function(e){self.toggleAudio();          return eat(e); }
-      ],[ 'a right',  function(e){AudioPlayer.next();          return eat(e); }
-      ],[ 'a n',      function(e){AudioPlayer.next();          return eat(e); }
-      ],[ 'a s',      function(e){AudioPlayer.switchAudio("mute"); return eat(e); }
+      ],[ 'a a',      e => {self.toggleAudio();          return eat(e); }
+      ],[ 'a right',  e => {AudioPlayer.next();          return eat(e); }
+      ],[ 'a n',      e => {AudioPlayer.next();          return eat(e); }
+      ],[ 'a s',      e => {AudioPlayer.switchAudio("mute"); return eat(e); }
 
-      ],[ 'a 0',      function(e){AudioPlayer.volume =   0; return eat(e); }
-      ],[ 'a 1',      function(e){AudioPlayer.volume =  11; return eat(e); }
-      ],[ 'a 2',      function(e){AudioPlayer.volume =  22; return eat(e); }
-      ],[ 'a 3',      function(e){AudioPlayer.volume =  33; return eat(e); }
-      ],[ 'a 4',      function(e){AudioPlayer.volume =  44; return eat(e); }
-      ],[ 'a 5',      function(e){AudioPlayer.volume =  55; return eat(e); }
-      ],[ 'a 6',      function(e){AudioPlayer.volume =  66; return eat(e); }
-      ],[ 'a 7',      function(e){AudioPlayer.volume =  77; return eat(e); }
-      ],[ 'a 8',      function(e){AudioPlayer.volume =  88; return eat(e); }
-      ],[ 'a 9',      function(e){AudioPlayer.volume = 100; return eat(e); }
+      ],[ 'a 0',      e => {AudioPlayer.volume =   0; return eat(e); }
+      ],[ 'a 1',      e => {AudioPlayer.volume =  11; return eat(e); }
+      ],[ 'a 2',      e => {AudioPlayer.volume =  22; return eat(e); }
+      ],[ 'a 3',      e => {AudioPlayer.volume =  33; return eat(e); }
+      ],[ 'a 4',      e => {AudioPlayer.volume =  44; return eat(e); }
+      ],[ 'a 5',      e => {AudioPlayer.volume =  55; return eat(e); }
+      ],[ 'a 6',      e => {AudioPlayer.volume =  66; return eat(e); }
+      ],[ 'a 7',      e => {AudioPlayer.volume =  77; return eat(e); }
+      ],[ 'a 8',      e => {AudioPlayer.volume =  88; return eat(e); }
+      ],[ 'a 9',      e => {AudioPlayer.volume = 100; return eat(e); }
 
-      ],[ 'a q 0',    function(e){AudioPlayer.switchQuality(0); return eat(e); }
-      ],[ 'a q 1',    function(e){AudioPlayer.switchQuality(1); return eat(e); }
-      ],[ 'a q 2',    function(e){AudioPlayer.switchQuality(2); return eat(e); }
-      ],[ 'a q 3',    function(e){AudioPlayer.switchQuality(3); return eat(e); }
-      ],[ 'a q 4',    function(e){AudioPlayer.switchQuality(4); return eat(e); }
+      ],[ 'a q 0',    e => {AudioPlayer.switchQuality(0); return eat(e); }
+      ],[ 'a q 1',    e => {AudioPlayer.switchQuality(1); return eat(e); }
+      ],[ 'a q 2',    e => {AudioPlayer.switchQuality(2); return eat(e); }
+      ],[ 'a q 3',    e => {AudioPlayer.switchQuality(3); return eat(e); }
+      ],[ 'a q 4',    e => {AudioPlayer.switchQuality(4); return eat(e); }
 
-      ],[ 'm d',      function(e){Projector.toggleMouse("d");  return eat(e); }
-      ],[ 'm a',      function(e){Projector.toggleMouse("a");  return eat(e); }
-      ],[ 'm h',      function(e){Projector.toggleMouse("h");  return eat(e); }
-      ],[ 'm p',      function(e){Projector.toggleMouse("p");  return eat(e); }
+      ],[ 'm d',      e => {Projector.toggleMouse("d");  return eat(e); }
+      ],[ 'm a',      e => {Projector.toggleMouse("a");  return eat(e); }
+      ],[ 'm h',      e => {Projector.toggleMouse("h");  return eat(e); }
+      ],[ 'm p',      e => {Projector.toggleMouse("p");  return eat(e); }
 
-      ],[ 'x g',      function(e){Projector.info("graph");   return eat(e); }
-      ],[ 'x f',      function(e){Projector.info("filters");   return eat(e); }
-      ],[ 'x c',      function(e){Projector.info("compos");    return eat(e); }
-      ],[ 'x h',      function(e){toggleHidden();              return eat(e); }
-      ],[ 'x e',      function(e){toggleEditor();              return eat(e); }
+      ],[ 'x g',      e => {Projector.info("graph");   return eat(e); }
+      ],[ 'x f',      e => {Projector.info("filters");   return eat(e); }
+      ],[ 'x c',      e => {Projector.info("compos");    return eat(e); }
+      ],[ 'x h',      e => {toggleHidden();              return eat(e); }
+      ],[ 'x e',      e => {toggleEditor();              return eat(e); }
       ]
-      ].forEach(function(trap){Mousetrap.bind(trap[0], trap[1]);});
+      ].forEach(trap => {Mousetrap.bind(trap[0], trap[1]);});
 
       help = [
         "a: animate",
@@ -463,7 +479,7 @@ var Projector = (function(){
         "o: outline"
       ];
 
-      var mouseScroll = function(e){
+      var mouseScroll = e => {
         if (e.wheelDelta > 0) {
           curCompo = (curCompo === compos.length -1) ? 1 : curCompo +1;
         } else {
@@ -475,7 +491,7 @@ var Projector = (function(){
       cvs.addEventListener('DOMMouseScroll', mouseScroll, false);
       cvs.addEventListener('mousewheel',     mouseScroll, false);
       cvs.addEventListener('dblclick',       eat, false);
-      cvs.addEventListener('mousedown',      function(e){
+      cvs.addEventListener('mousedown',      e => {
         
         mouse.event = event;
 
@@ -489,7 +505,7 @@ var Projector = (function(){
 
         if(mouse.button === 0){
           mouse.maybeClick = true;
-          setTimeout(function(){
+          setTimeout(() => {
             mouse.maybeClick = false;
           }, 200);
         }
@@ -504,7 +520,7 @@ var Projector = (function(){
 
       }, false);
 
-      cvs.addEventListener('mouseup',       function(e){
+      cvs.addEventListener('mouseup',       e => {
 
         mouse.keys = {shift:false, ctrl: false, alt:false, extra: false};
         mouse.event = event;
@@ -513,7 +529,7 @@ var Projector = (function(){
 
       }, false);
 
-      cvs.addEventListener('mousemove',     function(e){
+      cvs.addEventListener('mousemove',     e => {
 
          mouse.x = e.clientX;
          mouse.y = e.clientY;
@@ -534,7 +550,7 @@ var Projector = (function(){
 
       }, false);
 
-      cvs.addEventListener('mouseout',     function(e){
+      cvs.addEventListener('mouseout',     e => {
          mouse.x = -1000;
          mouse.y = -1000;
          Hotspots.leaveAll(e);
@@ -548,7 +564,7 @@ var Projector = (function(){
 //  
 //  
 // 
-    load: function(){
+    load() {
 
       videoextension =
         (navigator.sayswho[0].toLowerCase() === "chrome")  ? ".mp4" :
@@ -582,9 +598,11 @@ var Projector = (function(){
       
     },
 
-    initShows: function(onloaded){
-
-      var nameShow, name, org, tgt;
+    initShows(onloaded) {
+      var nameShow;
+      var name;
+      var org;
+      var tgt;
 
       shows = {};
 
@@ -640,11 +658,16 @@ var Projector = (function(){
       }
 
       onloaded();
-
     },
-    loadShow: function(show, nameCompo, onloaded){
-
-      var i=0, j, name, compo, filter, tasks, key, foundCompo = false;
+    loadShow(show, nameCompo, onloaded) {
+      var i=0;
+      var j;
+      var name;
+      var compo;
+      var filter;
+      var tasks;
+      var key;
+      var foundCompo = false;
 
       show = shows[show] || show;
 
@@ -652,9 +675,9 @@ var Projector = (function(){
         console.error("PR.loadShow: Can't find", show , "i", shows);}
 
       //clear old stuff
-      menu    = []; 
-      filters = []; 
-      compos  = []; 
+      menu    = [];
+      filters = [];
+      compos  = [];
 
       curShow = show;
 
@@ -700,24 +723,25 @@ var Projector = (function(){
         compo.key = key;
         compos[i] = compo;
         
-        Mousetrap.bind(key, (function(){
-          var cmp = i, n = name;
-          return function(e){
+        Mousetrap.bind(key, ((() => {
+          var cmp = i;
+          var n = name;
+          return e => {
             curCompo = cmp; 
             // console.log(cmp, n);
             return eat(e);
           };
-        })());
+        }))());
         
-        Mousetrap.bind("ctrl+" + key, (function(){
+        Mousetrap.bind("ctrl+" + key, ((() => {
           var next = i;
-          return function(e){
+          return e => {
             var last = curCompo;
-            self.addTick(  0, function(){curCompo = next;});
-            self.addTick( -1, function(){curCompo = last;});
+            self.addTick(  0, () => {curCompo = next;});
+            self.addTick( -1, () => {curCompo = last;});
             return eat(e);
           };
-        })());
+        }))());
 
         i += 1;
 
@@ -733,17 +757,15 @@ var Projector = (function(){
       }
 
       // prepare async loading of media and filters
-      tasks = filters.map(function(filter){
-        return function(onready){
-          filter.init(self, function(err){
-            filter.source._name = filter.name;
-            filter.ctx._name = filter.name;
-            onready(err);
-          });
-        };
+      tasks = filters.map(filter => onready => {
+        filter.init(self, err => {
+          filter.source._name = filter.name;
+          filter.ctx._name = filter.name;
+          onready(err);
+        });
       });
 
-      async.series(tasks, function(err, res){ 
+      async.series(tasks, (err, res) => { 
         if(err){
           console.log(err);
           Loader.onerror(err);} else {
@@ -754,27 +776,26 @@ var Projector = (function(){
       });
 
       document.getElementsByTagName("TITLE")[0].innerHTML = "pjs:" + curShow.name;
-
     },
-    initGraph: function (){
+    initGraph() {
+      var i;
+      var compo;
 
-      var i, compo;
-      
       for (i in compos) {
 
         compo = compos[i];
 
-        compo.log = (function (){
+        compo.log = ((() => {
           var cmp = compo;
-          return function (){
+          return () => {
             message.command = "collect";
             message.filters = [];
-            cmp.graph.forEach(function(item){
+            cmp.graph.forEach(item => {
               message.parent = self;
               item(message);
             });
             console.log("\nGRAPH - Show:", curShow.name, "Compo: " + compo.name, compo.comment);
-            message.filters.forEach(function(efx){
+            message.filters.forEach(efx => {
 
               console.log(efx.parent.name + "/" + efx.name, 
                 "\n" + H.roundA(efx.lastRect, 2),
@@ -785,48 +806,49 @@ var Projector = (function(){
 
             });
           };
-        })(); 
+        }))(); 
         
-        compo.filters = (function(){
+        compo.filters = ((() => {
           message.command = "collect";
           message.filters = [];
-          compo.graph.forEach(function(child){
+          compo.graph.forEach(child => {
             child(message);
           });
           // return message.filters.slice(0);
           return message.filters;
-        })();    
+        }))();    
 
-        compo.tick = (function (){
+        compo.tick = ((() => {
           var tickers = [];
-          compo.filters.forEach(function(filter){
+          compo.filters.forEach(filter => {
             if (typeof filter.tick === "function"){
               tickers.push(filter);
             }
           });
-          return function (){
-            tickers.forEach(function(filter){
+          return () => {
+            tickers.forEach(filter => {
               filter.tick();
             });
           };
-        })();
+        }))();
 
 
-        compo.link = (function (){
+        compo.link = ((() => {
           var cmp = compo;
-          return function (parent){
+          return parent => {
             message.command = "link";
-            cmp.graph.forEach(function(item){
+            cmp.graph.forEach(item => {
               message.parent = parent;
               item(message);
             });
           };
-        })(); 
+        }))(); 
 
-        compo.render = (function (){
+        compo.render = ((() => {
           var cmp = compo;
-          return function (ctx){
-            var item, t0 = window.performance.now();
+          return ctx => {
+            var item;
+            var t0 = window.performance.now();
             message.command = "render";
             message.filters = [];
             message.frame = tim.rends;
@@ -835,13 +857,13 @@ var Projector = (function(){
               message.ctx = ctx;
               cmp.graph[item](message);
             }
-            message.filters.forEach(function (f){
+            message.filters.forEach(f => {
               f.afterRender();
-            }); 
+            });
 
             cmp.lastDuration = window.performance.now() - t0;
           };
-        })();
+        }))();
 
         compo.link(test);
         compo.render(test.ctx);
@@ -857,7 +879,7 @@ var Projector = (function(){
 //  
 //  
 // 
-    animate: function(stamp){
+    animate(stamp) {
 
       var ts0 = window.performance.now();
 
@@ -888,7 +910,7 @@ var Projector = (function(){
         DPCS.tick(tim.rends, mouse.x/width, mouse.y/height);
         AudioPlayer.tick();
         AudioPlayer.tickBeat();
-        compos.forEach(function(cmp){cmp.tick();});
+        compos.forEach(cmp => {cmp.tick();});
         TWEEN.update();
 
         if (doClear) {
@@ -932,6 +954,5 @@ var Projector = (function(){
     }
 
   }; // end return
-
-})().init();
+}))().init();
 

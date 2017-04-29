@@ -3,7 +3,7 @@
  * Modified by António Afonso <antonio.afonso gmail.com>
  */
 
-(function(ns) {
+((ns => {
     var ID3v2 = ns.ID3v2 = {};
     
     ID3v2.readFrameData = {};
@@ -320,12 +320,12 @@
         }
     }
     
-    ID3v2.loadData = function(data, callback) {
+    ID3v2.loadData = (data, callback) => {
         data.loadRange([0, readSynchsafeInteger32At(6, data)], callback);
     };
     
     // http://www.id3.org/id3v2.3.0
-    ID3v2.readTagsFromData = function(data, tags) {
+    ID3v2.readTagsFromData = (data, tags) => {
         var offset = 0;
         var major = data.getByteAt(offset+3);
         if( major > 4 ) { return {version: '>2.4'}; }
@@ -371,4 +371,4 @@
     
     // Export functions for closure compiler
     ns["ID3v2"] = ID3v2;
-})(this);
+}))(this);

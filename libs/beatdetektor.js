@@ -228,27 +228,28 @@ BeatDetektor.config = BeatDetektor.config_default;
 
 BeatDetektor.prototype.process = function(timer_seconds, fft_data)
 {
-	if (!this.last_timer) { this.last_timer = timer_seconds; return; }	// ignore 0 start time
-	if (this.last_timer > timer_seconds) { this.reset(); return; }
-	
-	var timestamp = timer_seconds;
-	
-	this.last_update = timer_seconds - this.last_timer;
-	this.last_timer = timer_seconds;
+    if (!this.last_timer) { this.last_timer = timer_seconds; return; }	// ignore 0 start time
+    if (this.last_timer > timer_seconds) { this.reset(); return; }
 
-	if (this.last_update > 1.0) { this.reset(); return; }
+    var timestamp = timer_seconds;
 
-	var i,x;
-	var v;
-	
-	var bpm_floor = 60.0/this.BPM_MAX;
-	var bpm_ceil = 60.0/this.BPM_MIN;
-	
-	var range_step = (fft_data.length / this.config.BD_DETECTION_RANGES);
-	var range = 0;
-	
-		
-	for (x=0; x<fft_data.length; x+=range_step)
+    this.last_update = timer_seconds - this.last_timer;
+    this.last_timer = timer_seconds;
+
+    if (this.last_update > 1.0) { this.reset(); return; }
+
+    var i;
+    var x;
+    var v;
+
+    var bpm_floor = 60.0/this.BPM_MAX;
+    var bpm_ceil = 60.0/this.BPM_MIN;
+
+    var range_step = (fft_data.length / this.config.BD_DETECTION_RANGES);
+    var range = 0;
+
+
+    for (x=0; x<fft_data.length; x+=range_step)
 	{
 		this.a_freq_range[range] = 0;
 		
@@ -375,27 +376,27 @@ BeatDetektor.prototype.process = function(timer_seconds, fft_data)
 		
 		range++;
 	}
-		
-	// total contribution weight
-	this.quality_total = 0;
-	
-	// total of bpm values
-	var bpm_total = 0;
-	// number of bpm ranges that contributed to this test
-	var bpm_contributions = 0;
-	
-	
-	// accumulate quality weight total
-	for (var x=0; x<this.config.BD_DETECTION_RANGES; x++)
+
+    // total contribution weight
+    this.quality_total = 0;
+
+    // total of bpm values
+    var bpm_total = 0;
+    // number of bpm ranges that contributed to this test
+    var bpm_contributions = 0;
+
+
+    // accumulate quality weight total
+    for (var x=0; x<this.config.BD_DETECTION_RANGES; x++)
 	{
 		this.quality_total += this.detection_quality[x];
 	}
-	
-	
-	this.quality_avg = this.quality_total / this.config.BD_DETECTION_RANGES;
-	
-	
-	if (this.quality_total)
+
+
+    this.quality_avg = this.quality_total / this.config.BD_DETECTION_RANGES;
+
+
+    if (this.quality_total)
 	{
 		// determine the average weight of each quality range
 		this.ma_quality_avg += (this.quality_avg - this.ma_quality_avg) * this.last_update * this.config.BD_DETECTION_RATE/2.0;
@@ -410,14 +411,14 @@ BeatDetektor.prototype.process = function(timer_seconds, fft_data)
 		this.quality_avg = 0.001;
 	}
 
-	if (this.ma_quality_total <= 0) this.ma_quality_total = 0.001;
-	if (this.ma_quality_avg <= 0) this.ma_quality_avg = 0.001;
-	
-	var avg_bpm_offset = 0.0;
-	var offset_test_bpm = this.current_bpm;
-	var draft = new Array();
-	
-	if (this.quality_avg) for (x=0; x<this.config.BD_DETECTION_RANGES; x++)
+    if (this.ma_quality_total <= 0) this.ma_quality_total = 0.001;
+    if (this.ma_quality_avg <= 0) this.ma_quality_avg = 0.001;
+
+    var avg_bpm_offset = 0.0;
+    var offset_test_bpm = this.current_bpm;
+    var draft = new Array();
+
+    if (this.quality_avg) for (x=0; x<this.config.BD_DETECTION_RANGES; x++)
 	{
 		// if this detection range weight*tolerance is higher than the average weight then add it's moving average contribution 
 		if (this.detection_quality[x]*this.config.BD_QUALITY_TOLERANCE >= this.ma_quality_avg)
@@ -445,14 +446,14 @@ BeatDetektor.prototype.process = function(timer_seconds, fft_data)
 			}
 		}
 	}
-		
-	// if we have one or more contributions that pass criteria then attempt to display a guess
-	var has_prediction = (bpm_contributions>=this.config.BD_MINIMUM_CONTRIBUTIONS)?true:false;
 
-	var draft_winner=0;
-	var win_val = 0;
-	
-	if (has_prediction) 
+    // if we have one or more contributions that pass criteria then attempt to display a guess
+    var has_prediction = (bpm_contributions>=this.config.BD_MINIMUM_CONTRIBUTIONS)?true:false;
+
+    var draft_winner=0;
+    var win_val = 0;
+
+    if (has_prediction) 
 	{
 		for (var draft_i in draft)
 		{
@@ -473,13 +474,13 @@ BeatDetektor.prototype.process = function(timer_seconds, fft_data)
 			this.current_bpm = this.bpm_predict; 
 		}
 	}
-		
-	if (this.current_bpm && this.bpm_predict) this.current_bpm -= (this.current_bpm-this.bpm_predict)*this.last_update;	
-	
-	// hold a contest for bpm to find the current mode
-	var contest_max=0;
-	
-	for (var contest_i in this.bpm_contest)
+
+    if (this.current_bpm && this.bpm_predict) this.current_bpm -= (this.current_bpm-this.bpm_predict)*this.last_update;
+
+    // hold a contest for bpm to find the current mode
+    var contest_max=0;
+
+    for (var contest_i in this.bpm_contest)
 	{
 		if (contest_max < this.bpm_contest[contest_i]) contest_max = this.bpm_contest[contest_i]; 
 		if (this.bpm_contest[contest_i] > this.config.BD_FINISH_LINE/2.0)
@@ -489,9 +490,9 @@ BeatDetektor.prototype.process = function(timer_seconds, fft_data)
 			this.bpm_contest_lo[draft_int_lo]+= (this.bpm_contest[contest_i]/6.0)*this.last_update;
 		}
 	}
-		
-	// normalize to a finish line
-	if (contest_max > this.config.BD_FINISH_LINE) 
+
+    // normalize to a finish line
+    if (contest_max > this.config.BD_FINISH_LINE) 
 	{
 		for (var contest_i in this.bpm_contest)
 		{
@@ -499,14 +500,14 @@ BeatDetektor.prototype.process = function(timer_seconds, fft_data)
 		}
 	}
 
-	contest_max = 0;
-	for (var contest_i in this.bpm_contest_lo)
+    contest_max = 0;
+    for (var contest_i in this.bpm_contest_lo)
 	{
 		if (contest_max < this.bpm_contest_lo[contest_i]) contest_max = this.bpm_contest_lo[contest_i]; 
 	}
 
-	// normalize to a finish line
-	if (contest_max > this.config.BD_FINISH_LINE) 
+    // normalize to a finish line
+    if (contest_max > this.config.BD_FINISH_LINE) 
 	{
 		for (var contest_i in this.bpm_contest_lo)
 		{
@@ -514,26 +515,26 @@ BeatDetektor.prototype.process = function(timer_seconds, fft_data)
 		}
 	}
 
-	
-	// decay contest values from last loop
-	for (contest_i in this.bpm_contest)
+
+    // decay contest values from last loop
+    for (contest_i in this.bpm_contest)
 	{
 		this.bpm_contest[contest_i]-=this.bpm_contest[contest_i]*(this.last_update/this.config.BD_DETECTION_RATE);
 	}
-	
-	// decay contest values from last loop
-	for (contest_i in this.bpm_contest_lo)
+
+    // decay contest values from last loop
+    for (contest_i in this.bpm_contest_lo)
 	{
 		this.bpm_contest_lo[contest_i]-=this.bpm_contest_lo[contest_i]*(this.last_update/this.config.BD_DETECTION_RATE);
 	}
-	
-	this.bpm_timer+=this.last_update;
-	
-	var winner = 0;
-	var winner_lo = 0;
-	
-	// attempt to display the beat at the beat interval ;)
-	if (this.bpm_timer > this.winning_bpm/4.0 && this.current_bpm)
+
+    this.bpm_timer+=this.last_update;
+
+    var winner = 0;
+    var winner_lo = 0;
+
+    // attempt to display the beat at the beat interval ;)
+    if (this.bpm_timer > this.winning_bpm/4.0 && this.current_bpm)
 	{		
 		this.win_val = 0;
 		this.win_val_lo = 0;
@@ -595,7 +596,6 @@ BeatDetektor.prototype.process = function(timer_seconds, fft_data)
 		// 		", Jitter: "+(parseInt(this.bpm_offset*1000000.0)/1000000.0)+" ]");
   //   	}
 	}
-
 }
 
 // Sample Modules
@@ -627,40 +627,42 @@ BeatDetektor.modules.vis.VU = function()
 
 BeatDetektor.modules.vis.VU.prototype.process = function(det,lus)
 {
-		var i,det_val,det_max = 0.0;
-		if (typeof(lus)=='undefined') lus = det.last_update;
+    var i;
+    var det_val;
+    var det_max = 0.0;
+    if (typeof(lus)=='undefined') lus = det.last_update;
 
-		for (i = 0; i < det.config.BD_DETECTION_RANGES; i++)
-		{
-			det_val = (det.ma_freq_range[i]/det.maa_freq_range[i]);	
-			if (det_val > det_max) det_max = det_val;
-		}		
+    for (i = 0; i < det.config.BD_DETECTION_RANGES; i++)
+    {
+        det_val = (det.ma_freq_range[i]/det.maa_freq_range[i]);	
+        if (det_val > det_max) det_max = det_val;
+    }
 
-		if (det_max <= 0) det_max = 1.0;
+    if (det_max <= 0) det_max = 1.0;
 
-		for (i = 0; i < det.config.BD_DETECTION_RANGES; i++)
-		{
-			det_val = (det.ma_freq_range[i]/det.maa_freq_range[i]); //fabs(fftData[i*2]/2.0);
+    for (i = 0; i < det.config.BD_DETECTION_RANGES; i++)
+    {
+        det_val = (det.ma_freq_range[i]/det.maa_freq_range[i]); //fabs(fftData[i*2]/2.0);
 
-			if (det_val != det_val) det_val = 0;
+        if (det_val != det_val) det_val = 0;
 
-			//&& (det_val > this.vu_levels[i])
-			if (det_val>1.0)
-			{
-				det_val -= 1.0;
-				if (det_val>1.0) det_val = 1.0;
+        //&& (det_val > this.vu_levels[i])
+        if (det_val>1.0)
+        {
+            det_val -= 1.0;
+            if (det_val>1.0) det_val = 1.0;
 
-				if (det_val > this.vu_levels[i]) 
-					this.vu_levels[i] = det_val;
-				else if (det.current_bpm) this.vu_levels[i] -= (this.vu_levels[i]-det_val)*lus*(1.0/det.current_bpm)*3.0;
-			}
-			else 
-			{
-				if (det.current_bpm) this.vu_levels[i] -= (lus/det.current_bpm)*2.0;
-			}
+            if (det_val > this.vu_levels[i]) 
+                this.vu_levels[i] = det_val;
+            else if (det.current_bpm) this.vu_levels[i] -= (this.vu_levels[i]-det_val)*lus*(1.0/det.current_bpm)*3.0;
+        }
+        else 
+        {
+            if (det.current_bpm) this.vu_levels[i] -= (lus/det.current_bpm)*2.0;
+        }
 
-			if (this.vu_levels[i] < 0 || this.vu_levels[i] != this.vu_levels[i]) this.vu_levels[i] = 0;
-		}
+        if (this.vu_levels[i] < 0 || this.vu_levels[i] != this.vu_levels[i]) this.vu_levels[i] = 0;
+    }
 }
 
 

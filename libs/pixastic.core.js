@@ -4,7 +4,7 @@
  * License: [http://www.pixastic.com/lib/license.txt]
  */
 
-var Pixastic = (function() { 
+var Pixastic = ((() => { 
 
 
 	function addEvent(el, event, handler) {
@@ -16,7 +16,7 @@ var Pixastic = (function() {
 
 	function onready(handler) {
 		var handlerDone = false;
-		var execHandler = function() {
+		var execHandler = () => {
 			if (!handlerDone) {
 				handlerDone = true;
 				handler();
@@ -24,7 +24,7 @@ var Pixastic = (function() {
 		}
 		document.write("<"+"script defer src=\"//:\" id=\"__onload_ie_pixastic__\"></"+"script>");
 		var script = document.getElementById("__onload_ie_pixastic__");
-		script.onreadystatechange = function() {
+		script.onreadystatechange = () => {
 			if (script.readyState == "complete") {
 				script.parentNode.removeChild(script);
 				execHandler();
@@ -40,7 +40,7 @@ var Pixastic = (function() {
 		var canvasEls = getElementsByClass("pixastic", null, "canvas");
 		var elements = imgEls.concat(canvasEls);
 		for (var i=0;i<elements.length;i++) {
-			(function() {
+			((() => {
 
 			var el = elements[i];
 			var actions = [];
@@ -64,7 +64,7 @@ var Pixastic = (function() {
 								el = res;
 						}
 					} else {
-						dataImg.onload = function() {
+						dataImg.onload = () => {
 							for (var a=0;a<actions.length;a++) {
 								var res = Pixastic.applyAction(el, el, actions[a], null)
 								if (res) 
@@ -73,7 +73,7 @@ var Pixastic = (function() {
 						}
 					}
 				} else {
-					setTimeout(function() {
+					setTimeout(() => {
 						for (var a=0;a<actions.length;a++) {
 							var res = Pixastic.applyAction(
 								el, el, actions[a], null
@@ -85,7 +85,7 @@ var Pixastic = (function() {
 				}
 			}
 
-			})();
+			}))();
 		}
 	}
 
@@ -136,18 +136,16 @@ var Pixastic = (function() {
 
 	// canvas capability checks
 
-	var hasCanvas = (function() {
+	var hasCanvas = ((() => {
 		var c = document.createElement("canvas");
 		var val = false;
 		try {
 			val = !!((typeof c.getContext == "function") && c.getContext("2d"));
 		} catch(e) {}
-		return function() {
-			return val;
-		}
-	})();
+		return () => val;
+	}))();
 
-	var hasCanvasImageData = (function() {
+	var hasCanvasImageData = ((() => {
 		var c = document.createElement("canvas");
 		var val = false;
 		var ctx;
@@ -156,12 +154,10 @@ var Pixastic = (function() {
 				val = (typeof ctx.getImageData == "function");
 			}
 		} catch(e) {}
-		return function() {
-			return val;
-		}
-	})();
+		return () => val;
+	}))();
 
-	var hasGlobalAlpha = (function() {
+	var hasGlobalAlpha = ((() => {
 		var hasAlpha = false;
 		var red = document.createElement("canvas");
 		if (hasCanvas() && hasCanvasImageData()) {
@@ -182,10 +178,8 @@ var Pixastic = (function() {
 	
 			hasAlpha = (reddata[2] != 255);
 		}
-		return function() {
-			return hasAlpha;
-		}
-	})();
+		return () => hasAlpha;
+	}))();
 
 
 	// return public interface
@@ -196,34 +190,34 @@ var Pixastic = (function() {
 
 		debug : false,
 		
-		applyAction : function(img, dataImg, actionName, options) {
+		applyAction(img, dataImg, actionName, options) {
+            options = options || {};
 
-			options = options || {};
-
-			var imageIsCanvas = (img.tagName.toLowerCase() == "canvas");
-			if (imageIsCanvas && Pixastic.Client.isIE()) {
+            var imageIsCanvas = (img.tagName.toLowerCase() == "canvas");
+            if (imageIsCanvas && Pixastic.Client.isIE()) {
 				if (Pixastic.debug) writeDebug("Tried to process a canvas element but browser is IE.");
 				return false;
 			}
 
-			var canvas, ctx;
-			var hasOutputCanvas = false;
-			if (Pixastic.Client.hasCanvas()) {
+            var canvas;
+            var ctx;
+            var hasOutputCanvas = false;
+            if (Pixastic.Client.hasCanvas()) {
 				hasOutputCanvas = !!options.resultCanvas;
 				canvas = options.resultCanvas || document.createElement("canvas");
 				ctx = canvas.getContext("2d");
 			}
 
-			var w = img.offsetWidth;
-			var h = img.offsetHeight;
+            var w = img.offsetWidth;
+            var h = img.offsetHeight;
 
-			if (imageIsCanvas) {
+            if (imageIsCanvas) {
 				w = img.width;
 				h = img.height;
 			}
 
-			// offsetWidth/Height might be 0 if the image is not in the document
-			if (w == 0 || h == 0) {
+            // offsetWidth/Height might be 0 if the image is not in the document
+            if (w == 0 || h == 0) {
 				if (img.parentNode == null) {
 					// add the image to the doc (way out left), read its dimensions and remove it again
 					var oldpos = img.style.position;
@@ -242,7 +236,7 @@ var Pixastic = (function() {
 				}
 			}
 
-			if (actionName.indexOf("(") > -1) {
+            if (actionName.indexOf("(") > -1) {
 				var tmp = actionName;
 				actionName = tmp.substr(0, tmp.indexOf("("));
 				var arg = tmp.match(/\((.*?)\)/);
@@ -267,7 +261,7 @@ var Pixastic = (function() {
 				}
 			}
 
-			if (!options.rect) {
+            if (!options.rect) {
 				options.rect = {
 					left : 0, top : 0, width : w, height : h
 				};
@@ -278,20 +272,20 @@ var Pixastic = (function() {
 				options.rect.height = Math.round(options.rect.height);
 			}
 
-			var validAction = false;
-			if (Pixastic.Actions[actionName] && typeof Pixastic.Actions[actionName].process == "function") {
+            var validAction = false;
+            if (Pixastic.Actions[actionName] && typeof Pixastic.Actions[actionName].process == "function") {
 				validAction = true;
 			}
-			if (!validAction) {
+            if (!validAction) {
 				if (Pixastic.debug) writeDebug("Invalid action \"" + actionName + "\". Maybe file not included?");
 				return false;
 			}
-			if (!Pixastic.Actions[actionName].checkSupport()) {
+            if (!Pixastic.Actions[actionName].checkSupport()) {
 				if (Pixastic.debug) writeDebug("Action \"" + actionName + "\" not supported by this browser.");
 				return false;
 			}
 
-			if (Pixastic.Client.hasCanvas()) {
+            if (Pixastic.Client.hasCanvas()) {
 				if (canvas !== img) {
 					canvas.width = w;
 					canvas.height = h;
@@ -316,24 +310,24 @@ var Pixastic = (function() {
 				img.__pixastic_org_style = img.style.cssText;
 			}
 
-			var params = {
+            var params = {
 				image : img,
-				canvas : canvas,
+				canvas,
 				width : w,
 				height : h,
 				useData : true,
-				options : options
+				options
 			}
 
-			// Ok, let's do it!
+            // Ok, let's do it!
 
-			var res = Pixastic.Actions[actionName].process(params);
+            var res = Pixastic.Actions[actionName].process(params);
 
-			if (!res) {
+            if (!res) {
 				return false;
 			}
 
-			if (Pixastic.Client.hasCanvas()) {
+            if (Pixastic.Client.hasCanvas()) {
 				if (params.useData) {
 					if (Pixastic.Client.hasCanvasImageData()) {
 						canvas.getContext("2d").putImageData(params.canvasData, options.rect.left, options.rect.top);
@@ -365,10 +359,10 @@ var Pixastic = (function() {
 				return canvas;
 			}
 
-			return img;
-		},
+            return img;
+        },
 
-		prepareData : function(params, getCopy) {
+		prepareData(params, getCopy) {
 			var ctx = params.canvas.getContext("2d");
 			var rect = params.options.rect;
 			var dataDesc = ctx.getImageData(rect.left, rect.top, rect.width, rect.height);
@@ -378,7 +372,7 @@ var Pixastic = (function() {
 		},
 
 		// load the image file
-		process : function(img, actionName, options, callback) {
+		process(img, actionName, options, callback) {
 			if (img.tagName.toLowerCase() == "img") {
 				var dataImg = new Image();
 				dataImg.src = img.src;
@@ -387,7 +381,7 @@ var Pixastic = (function() {
 					if (callback) callback(res);
 					return res;
 				} else {
-					dataImg.onload = function() {
+					dataImg.onload = () => {
 						var res = Pixastic.applyAction(img, dataImg, actionName, options)
 						if (callback) callback(res);
 					}
@@ -400,7 +394,7 @@ var Pixastic = (function() {
 			}
 		},
 
-		revert : function(img) {
+		revert(img) {
 			if (Pixastic.Client.hasCanvas()) {
 				if (img.tagName.toLowerCase() == "canvas" && img.__pixastic_org_image) {
 					img.width = img.__pixastic_org_width;
@@ -420,16 +414,16 @@ var Pixastic = (function() {
 		},
 
 		Client : {
-			hasCanvas : hasCanvas,
-			hasCanvasImageData : hasCanvasImageData,
-			hasGlobalAlpha : hasGlobalAlpha,
-			isIE : function() {
+			hasCanvas,
+			hasCanvasImageData,
+			hasGlobalAlpha,
+			isIE() {
 				return !!document.all && !!window.attachEvent && !window.opera;
 			}
 		},
 
 		Actions : {}
-	}
+	};
 
 
-})();
+}))();

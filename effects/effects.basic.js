@@ -136,7 +136,8 @@ EFX.Basic.Mouse.prototype.load = function(onloaded){
   this.ops = {a: 1, o: "sov", r: 0, c: "", p: "dyn", l: "-1000", t: "-1000"};
   this.image = new Image();
   this.image.onload  = function () {
-    var sw = self.image.width, sh = self.image.height;
+    var sw = self.image.width;
+    var sh = self.image.height;
     self.ops.w  = sw / self.projector.width;
     self.ops.h  = sh / self.projector.height;
     this.width  = String(sw);
@@ -146,7 +147,7 @@ EFX.Basic.Mouse.prototype.load = function(onloaded){
     self.ctx.drawImage(self.image, 0, 0, sw, sh);
     onloaded();
   };
-  this.image.onerror = function (e) {
+  this.image.onerror = e => {
     onloaded({event:e, filter: self.name, message:"Could not load file: " + self.src});
   };
   this.image.src = this.src;
@@ -222,7 +223,7 @@ EFX.Basic.Video.prototype.load = function(onloaded){
 
   this.ops.speed = 1;
 
-  this.source.addEventListener("playing",  function ()  {
+  this.source.addEventListener("playing",  () => {
     var s = self.source;
     s.width  = s.videoWidth;
     s.height = s.videoHeight;
@@ -230,7 +231,7 @@ EFX.Basic.Video.prototype.load = function(onloaded){
     onloaded();
   },  false);
 
-  this.source.addEventListener("error", function (e) {
+  this.source.addEventListener("error", e => {
     onloaded({event:e, device: "Starting filter: " + self.name + " failed", message:"Could not load file: " + self.src});
   }, false);
 
@@ -266,7 +267,7 @@ EFX.Basic.Bitmap.prototype.load = function(onready){
   // this.clear = false;
   this.image = new Image();
   
-  this.image.onload  = function ()  {
+  this.image.onload  = () => {
     self.width  = String(self.image.width);
     self.height = String(self.image.height);
     self.source.width  = self.image.width;
@@ -275,7 +276,7 @@ EFX.Basic.Bitmap.prototype.load = function(onready){
     onready();
   };
   
-  this.image.onerror = function (e) {
+  this.image.onerror = e => {
     onready({event:e, device: "filter: " + self.name, message:"Could not load file: " + self.src});
   };
   
@@ -307,12 +308,15 @@ EFX.Basic.Pattern.prototype.load = function(onready){
   this.width  = this.width  || "512";
   this.height = this.height || "512";
   this.image = new Image();
-  this.image.onload  = function ()  {
-    var x, y,
-        iw = self.image.width, ih = self.image.width, 
-        cw = self.width, ch = self.height,
-        xp = parseInt(cw/iw, 10) +1,
-        yp = parseInt(cw/iw, 10) +1;
+  this.image.onload  = () => {
+    var x;
+    var y;
+    var iw = self.image.width;
+    var ih = self.image.width;
+    var cw = self.width;
+    var ch = self.height;
+    var xp = parseInt(cw/iw, 10) +1;
+    var yp = parseInt(cw/iw, 10) +1;
 
     self.source.width  = self.width;
     self.source.height = self.height;
@@ -325,7 +329,7 @@ EFX.Basic.Pattern.prototype.load = function(onready){
     onready();
   };
   
-  this.image.onerror = function (e) {
+  this.image.onerror = e => {
     onready({event:e, device: "Starting filter: " + self.name + " failed", message:"Could not load file: " + self.src});
   };
   
@@ -352,9 +356,9 @@ EFX.Basic.Camera.prototype = new Filter();
 EFX.Basic.Camera.constructor = EFX.Basic.Camera;
 EFX.Basic.Camera.prototype.resize = new Function();
 EFX.Basic.Camera.prototype.load = function(onloaded){
+  var self = this;
+  var hidden = document.getElementById("hidden");
 
-  var self = this, hidden = document.getElementById("hidden");
-  
   // fallBack("fallback");
   // return;
 
@@ -384,13 +388,13 @@ EFX.Basic.Camera.prototype.load = function(onloaded){
   }
 
 
-  navigator.getUserMedia({video: true, toString : function() {return "video";}}, 
+  navigator.getUserMedia({video: true, toString() {return "video";}}, 
 
-    function(stream) { 
+    stream => { 
       self.source = document.createElement("video");
       self.device = stream.videoTracks[0].label;
       self.source.autoplay = true;
-      self.source.addEventListener('playing', function(){
+      self.source.addEventListener('playing', () => {
         self.width  = String(self.source.videoWidth/2);
         self.height = String(self.source.videoHeight/2);
         self.source.width  = Number(self.width);
@@ -410,11 +414,10 @@ EFX.Basic.Camera.prototype.load = function(onloaded){
 
     },
 
-    function(e){
+    e => {
       fallBack(e);
     }
 
   );
-
 };
 

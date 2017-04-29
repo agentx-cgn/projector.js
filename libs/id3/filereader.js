@@ -4,16 +4,14 @@
  *
  */
 
-(function(ns) {
-    ns["FileAPIReader"] = function(file) {
-        return function(url, fncCallback, fncError) {
-            var reader = new FileReader();
+((ns => {
+    ns["FileAPIReader"] = file => (url, fncCallback, fncError) => {
+        var reader = new FileReader();
 
-            reader.onload = function(event) {
-                var result = event.target.result;
-                fncCallback(new BinaryFile(result));
-            };
-            reader.readAsBinaryString(file);
-        }
+        reader.onload = event => {
+            var result = event.target.result;
+            fncCallback(new BinaryFile(result));
+        };
+        reader.readAsBinaryString(file);
     };
-})(this);
+}))(this);

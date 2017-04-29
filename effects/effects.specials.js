@@ -26,10 +26,10 @@ EFX.Specials.Rain.prototype.load = function(onloaded){
   this.ops.size = 0.05; // image scale
 
   this.image = new Image();
-  this.image.onload  = function ()  {
+  this.image.onload  = () => {
     onloaded();
   };
-  this.image.onerror = function (e) {
+  this.image.onerror = e => {
     onloaded({event:e, device: "filter: " + self.name, message:"Could not load file: " + self.src});
   };
 
@@ -37,13 +37,15 @@ EFX.Specials.Rain.prototype.load = function(onloaded){
 
 };
 EFX.Specials.Rain.prototype.beforeDraw = function(ops){
-
-  var i, x, y, ctx = this.ctx, 
-      n  = ~~ops.amount,
-      w  = this.source.width,
-      h  = this.source.height,
-      tw = w * ops.size,
-      th = tw; // assuming quadratic image
+  var i; // assuming quadratic image
+  var x;
+  var y;
+  var ctx = this.ctx;
+  var n  = ~~ops.amount;
+  var w  = this.source.width;
+  var h  = this.source.height;
+  var tw = w * ops.size;
+  var th = tw;
 
   if (this.clear) {
     ctx.setTransform(1, 0, 0, 1, 0, 0);
@@ -57,7 +59,6 @@ EFX.Specials.Rain.prototype.beforeDraw = function(ops){
       ctx.drawImage(this.image, x, y, tw, th);
     }
   }
-
 };
 
 

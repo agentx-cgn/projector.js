@@ -3,8 +3,8 @@
 
 
 function Filter(cfg){
-
-  var p, self = this;
+  var p;
+  var self = this;
 
   this.gcos = {
     "cop": "copy",
@@ -54,18 +54,17 @@ function Filter(cfg){
 
   for (p in cfg) {
     this[p] = cfg[p];}
-
 }
 
 Filter.prototype = {
   tick:         null,  /* gets show wide called, if defined, see mouse */
-  load:         function (onloaded){onloaded();  /* probable overwrite, remember the callback */ },
+  load(onloaded) {onloaded();  /* probable overwrite, remember the callback */ },
   beforeRender: new Function(), // called before local render (before childs)
   beforeDraw:   new Function(), // called after local draw (after childs)
   afterDraw:    new Function(), // called after local draw
   afterRender:  new Function(), // called after global render
-  resize:       function(ctxs){this.resizeToParent([this.source]);},
-  init:         function (projector, onloaded){
+  resize(ctxs) {this.resizeToParent([this.source]);},
+  init(projector, onloaded) {
     this.projector = projector;
     if(this.dom){
       document.getElementById("hidden").appendChild(this.source);
@@ -73,14 +72,14 @@ Filter.prototype = {
     }
     this.load(onloaded);
   },
-  type: function() { 
+  type() { 
      var funcNameRegex = /function (.{1,})\(/;
      var results = (funcNameRegex).exec((this).constructor.toString());
      return (results && results.length > 1) ? results[1] : "";
   },
-  resizeToParent:   function (cvss){
+  resizeToParent(cvss) {
     var self = this;
-    cvss.forEach(function(cvs){
+    cvss.forEach(cvs => {
       if (typeof self.width === "string"){
         cvs.width  = self.width;
       } else {
@@ -94,18 +93,19 @@ Filter.prototype = {
 
     });
   },
-  applyFillStyle:   function (color){
+  applyFillStyle(color) {
     this.ctx.fillStyle = Color(color).css;
   },
-  applyStrokeStyle: function (color){
+  applyStrokeStyle(color) {
     this.ctx.strokeStyle = Color(color).css;
   },
-  applyFont:        function (font){
-
+  applyFont(font) {
     // in:  [style,    weight, size,   align, font-family]
     // ex:  ["normal", "bold", 72/0.5,  "left", "sans-serif"],
 
-    var f = font, size;
+    var f = font;
+
+    var size;
 
     // very basic check
     if (f.length !== 5){
@@ -114,23 +114,28 @@ Filter.prototype = {
     size = ~~( (typeof f[2] === "string") ? Number(f[2]) : this.parent.source.height * f[2]);
 
     this.ctx.font = [f[0], f[1], size+"px", f[4]].join(" ");
-    this.ctx.textAlign = f[3];                                   
+    this.ctx.textAlign = f[3];
     this.ctx.textBaseline = "middle"; // always !!!!                                    
-
   },
-  calcParams:      function (target, ops){
-
-    var dX=0, dY=0, sX=1, sY=1, n=this.name,
-        tw  = target.canvas.width,
-        th  = target.canvas.height,
-        sw  = (typeof ops.w === "string") ? ~~ops.w : tw * ops.w,
-        sh  = (typeof ops.h === "string") ? ~~ops.h : th * ops.h,
-        tl  = (typeof ops.l === "string") ? ~~ops.l : tw * ops.l,
-        tt  = (typeof ops.t === "string") ? ~~ops.t : th * ops.t,
-        r1  = -sw/2, r2 = -sh/2, r3 = sw, r4 = sh,
-        rot =  ops.r / (180/Math.PI),
-        as  = this.source.width / this.source.height,
-        at  = tw / th;
+  calcParams(target, ops) {
+    var dX=0;
+    var dY=0;
+    var sX=1;
+    var sY=1;
+    var n=this.name;
+    var tw  = target.canvas.width;
+    var th  = target.canvas.height;
+    var sw  = (typeof ops.w === "string") ? ~~ops.w : tw * ops.w;
+    var sh  = (typeof ops.h === "string") ? ~~ops.h : th * ops.h;
+    var tl  = (typeof ops.l === "string") ? ~~ops.l : tw * ops.l;
+    var tt  = (typeof ops.t === "string") ? ~~ops.t : th * ops.t;
+    var r1  = -sw/2;
+    var r2 = -sh/2;
+    var r3 = sw;
+    var r4 = sh;
+    var rot =  ops.r / (180/Math.PI);
+    var as  = this.source.width / this.source.height;
+    var at  = tw / th;
 
     switch (ops.p) {
 
@@ -165,12 +170,14 @@ Filter.prototype = {
     if (ops.m) {sX = -sX;}
 
     return [[r1, r2, r3, r4], [dX, dY, sX, sY, rot]];
-
   },
-  connect: function( /* arguments */ ){
-
-    var self = this, childs = [], drawOps,
-        a, arg, args = Array.prototype.slice.call(arguments);
+  connect() /* arguments */ {
+    var self = this;
+    var childs = [];
+    var drawOps;
+    var a;
+    var arg;
+    var args = Array.prototype.slice.call(arguments);
 
     for (a in args){
       arg = args[a];
@@ -184,10 +191,14 @@ Filter.prototype = {
     }
 
     return function filterConnect(message){
-
-      var o, c, params, n = self.name,
-          ops = H.clone(self.ops),
-          ctx, frame, sector;
+      var o;
+      var c;
+      var params;
+      var n = self.name;
+      var ops = H.clone(self.ops);
+      var ctx;
+      var frame;
+      var sector;
 
       if (message.command === "collect") {
         self.parent = message.parent;
@@ -207,7 +218,7 @@ Filter.prototype = {
 
 
 
-  // only command = 'render' left
+      // only command = 'render' left
       message.filters.push(self);
       ctx    = message.ctx;
       frame  = message.frame;
@@ -265,16 +276,14 @@ Filter.prototype = {
       ctx.scale(self.lastTrans[2], self.lastTrans[3]);
       ctx.rotate(self.lastTrans[4]);
 
-      ctx.drawImage.apply(ctx, params[0]);
+      ctx.drawImage(...params[0]);
 
       ctx.restore();
 
       self.afterDraw();
 
       self.lastFrame = frame;
-
     };
-    
   }
 
 

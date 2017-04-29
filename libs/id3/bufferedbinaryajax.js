@@ -13,7 +13,7 @@
  * @param {function(BufferedBinaryFile)} fncCallback The function that will be invoked when the BufferedBinaryFile is ready to be used.
  * @param {function()} fncError The function that will be invoked when an error occrus, for instance, the file pointed by the URL is doesn't exist.
  */
-var BufferedBinaryAjax = function(strUrl, fncCallback, fncError) {
+var BufferedBinaryAjax = (strUrl, fncCallback, fncError) => {
     function sendRequest(strURL, fncCallback, fncError, aRange, bAcceptRanges, iFileSize, bAsync) {
 		var oHTTP = createRequest();
 		if (oHTTP) {
@@ -29,7 +29,7 @@ var BufferedBinaryAjax = function(strUrl, fncCallback, fncError) {
 
 			if (fncCallback) {
 				if (typeof(oHTTP.onload) != "undefined") {
-					oHTTP.onload = function() {
+					oHTTP.onload = () => {
 
 						if (oHTTP.status == "200" || oHTTP.status == "206") {
 							oHTTP.fileSize = iFileSize || oHTTP.getResponseHeader("Content-Length");
@@ -40,7 +40,7 @@ var BufferedBinaryAjax = function(strUrl, fncCallback, fncError) {
 						oHTTP = null;
 					};
 				} else {
-					oHTTP.onreadystatechange = function() {
+					oHTTP.onreadystatechange = () => {
 						if (oHTTP.readyState == 4) {
 							if (oHTTP.status == "200" || oHTTP.status == "206") {
 								oHTTP.fileSize = iFileSize || oHTTP.getResponseHeader("Content-Length");
@@ -170,7 +170,7 @@ var BufferedBinaryAjax = function(strUrl, fncCallback, fncError) {
             //console.log("Getting: " + range[0] + " to " +  range[1]);
             sendRequest(
                 strUrl,
-                function(http) {
+                http => {
                     var size = parseInt(http.getResponseHeader("Content-Length"), 10);
                     // Range header not supported
                     if( size == iLength ) {
@@ -210,7 +210,7 @@ var BufferedBinaryAjax = function(strUrl, fncCallback, fncError) {
         /** 
          * @override
          */
-		this.getByteAt = function(iOffset) {
+		this.getByteAt = iOffset => {
 		    var block = getBlockAtOffset(iOffset);
 		    if( typeof block.data == "string" ) {
 		        return block.data.charCodeAt(iOffset - block.offset) & 0xFF;
@@ -224,9 +224,7 @@ var BufferedBinaryAjax = function(strUrl, fncCallback, fncError) {
 		 *
 		 * @returns The number of total bytes that have been downloaded.
 		 */
-		this.getDownloadedBytesCount = function() {
-		    return downloadedBytesCount;
-		};
+		this.getDownloadedBytesCount = () => downloadedBytesCount;
 		
 		/**
 		 * Downloads the byte range given. Useful for preloading.
@@ -234,7 +232,7 @@ var BufferedBinaryAjax = function(strUrl, fncCallback, fncError) {
 		 * @param {Array} range Two element array that denotes the first byte to be read on the first position and the last byte to be read on the last position. A range of [2, 5] will download bytes 2,3,4 and 5.
 		 * @param {?function()} callback The function to invoke when the blocks have been downloaded, this makes this call asynchronous.
 		 */
-		this.loadRange = function(range, callback) {
+		this.loadRange = (range, callback) => {
 		    var blockRange = getBlockRangeForByteRange(range);
 		    waitForBlocks(blockRange, callback);
 		};
@@ -243,7 +241,7 @@ var BufferedBinaryAjax = function(strUrl, fncCallback, fncError) {
     function init() {
         getHead(
 			strUrl, 
-			function(oHTTP) {
+			oHTTP => {
 				var iLength = parseInt(oHTTP.getResponseHeader("Content-Length"),10) || -1;
 				fncCallback(new BufferedBinaryFile(strUrl, iLength));
 			}
@@ -261,22 +259,16 @@ function BinaryFile(strData, iDataOffset, iDataLength) {
 	var dataOffset = iDataOffset || 0;
 	var dataLength = 0;
 
-	this.getRawData = function() {
-		return data;
-	};
+	this.getRawData = () => data;
 
 	if (typeof strData == "string") {
 		dataLength = iDataLength || data.length;
 
-		this.getByteAt = function(iOffset) {
-			return data.charCodeAt(iOffset + dataOffset) & 0xFF;
-		};
+		this.getByteAt = iOffset => data.charCodeAt(iOffset + dataOffset) & 0xFF;
 	} else if (typeof strData == "unknown") {
 		dataLength = iDataLength || IEBinary_getLength(data);
 
-		this.getByteAt = function(iOffset) {
-			return IEBinary_getByteAt(data, iOffset + dataOffset);
-		};
+		this.getByteAt = iOffset => IEBinary_getByteAt(data, iOffset + dataOffset);
 	}
     // @aadsm
     this.getBytesAt = function(iOffset, iLength) {
@@ -287,9 +279,7 @@ function BinaryFile(strData, iDataOffset, iDataLength) {
         return bytes;
     };
 
-	this.getLength = function() {
-		return dataLength;
-	};
+	this.getLength = () => dataLength;
 
     // @aadsm
     this.isBitSetAt = function(iOffset, iBit) {
@@ -320,17 +310,17 @@ function BinaryFile(strData, iDataOffset, iDataLength) {
 			return iUShort;
 	};
 	this.getLongAt = function(iOffset, bBigEndian) {
-		var iByte1 = this.getByteAt(iOffset),
-			iByte2 = this.getByteAt(iOffset + 1),
-			iByte3 = this.getByteAt(iOffset + 2),
-			iByte4 = this.getByteAt(iOffset + 3);
+        var iByte1 = this.getByteAt(iOffset);
+        var iByte2 = this.getByteAt(iOffset + 1);
+        var iByte3 = this.getByteAt(iOffset + 2);
+        var iByte4 = this.getByteAt(iOffset + 3);
 
-		var iLong = bBigEndian ? 
+        var iLong = bBigEndian ? 
 			(((((iByte1 << 8) + iByte2) << 8) + iByte3) << 8) + iByte4
 			: (((((iByte4 << 8) + iByte3) << 8) + iByte2) << 8) + iByte1;
-		if (iLong < 0) iLong += 4294967296;
-		return iLong;
-	};
+        if (iLong < 0) iLong += 4294967296;
+        return iLong;
+    };
 	this.getSLongAt = function(iOffset, bBigEndian) {
 		var iULong = this.getLongAt(iOffset, bBigEndian);
 		if (iULong > 2147483647)
@@ -340,15 +330,15 @@ function BinaryFile(strData, iDataOffset, iDataLength) {
 	};
 	// @aadsm
 	this.getInteger24At = function(iOffset, bBigEndian) {
-        var iByte1 = this.getByteAt(iOffset),
-			iByte2 = this.getByteAt(iOffset + 1),
-			iByte3 = this.getByteAt(iOffset + 2);
+        var iByte1 = this.getByteAt(iOffset);
+        var iByte2 = this.getByteAt(iOffset + 1);
+        var iByte3 = this.getByteAt(iOffset + 2);
 
-		var iInteger = bBigEndian ? 
+        var iInteger = bBigEndian ? 
 			((((iByte1 << 8) + iByte2) << 8) + iByte3)
 			: ((((iByte3 << 8) + iByte2) << 8) + iByte1);
-		if (iInteger < 0) iInteger += 16777216;
-		return iInteger;
+        if (iInteger < 0) iInteger += 16777216;
+        return iInteger;
     };
 	this.getStringAt = function(iOffset, iLength) {
 		var aStr = [];
@@ -384,14 +374,12 @@ function BinaryFile(strData, iDataOffset, iDataLength) {
 	this.getCharAt = function(iOffset) {
 		return String.fromCharCode(this.getByteAt(iOffset));
 	};
-	this.toBase64 = function() {
-		return window.btoa(data);
-	};
-	this.fromBase64 = function(strBase64) {
+	this.toBase64 = () => window.btoa(data);
+	this.fromBase64 = strBase64 => {
 		data = window.atob(strBase64);
 	};
 	
-    this.loadRange = function(range, callback) {
+    this.loadRange = (range, callback) => {
         callback();
     };
 }
